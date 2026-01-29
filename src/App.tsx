@@ -54,8 +54,9 @@ export interface TokenTransaction {
 
 export default function App() {
   const { session, user, loading: authLoading } = useAuth();
-  const [userRole, setUserRole] = useState<UserRole>('unauthenticated');
-  const [currentStudentId, setCurrentStudentId] = useState<string | null>(null);
+  const userRole = user?.user_metadata?.role as UserRole || 'unauthenticated';
+  const currentStudentId = user?.id;
+
   const {
     data: students,
     loading: studentsLoading,
@@ -70,19 +71,6 @@ export default function App() {
   } = useSupabaseCrud<Teacher>('teachers');
   
   const [nftRequests, setNftRequests] = useState<NFTRequest[]>([]);
-
-  useEffect(() => {
-    if (!authLoading) {
-      if (session && user) {
-        const userMetadataRole = user.user_metadata?.role as UserRole | undefined;
-        setUserRole(userMetadataRole || 'unapproved');
-        setCurrentStudentId(user.id);
-      } else {
-        setUserRole('unauthenticated');
-        setCurrentStudentId(null);
-      }
-    }
-  }, [authLoading, session, user]);
 
   const handleCreateStudent = async (student: Omit<Student, 'id' | 'tokens' | 'tasksCompleted' | 'nfts'>) => {
     await createStudent({
@@ -234,9 +222,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
-      <Navigation
-        userRole={userRole}
-      >
+      <Navigation>
         <AuthStatus />
       </Navigation>
       <main className="container mx-auto px-4 py-8 max-w-7xl">

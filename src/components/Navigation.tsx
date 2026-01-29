@@ -1,13 +1,10 @@
 import { User, BookText, Shield, Fingerprint, Trophy, LogOut } from 'lucide-react';
 import type { UserRole } from '../App';
-import { useAuth } from '../authContext'; // Import useAuth
+import { useAuth } from '../authContext'; 
 
-interface NavigationProps {
-  userRole: UserRole;
-}
-
-export function Navigation({ userRole }: NavigationProps) {
-  const { signOut } = useAuth(); // Use useAuth hook
+export function Navigation() {
+  const { user, switchUserRole, signOut } = useAuth();
+  const userRole = user?.user_metadata.role as UserRole;
 
   const roles: { id: UserRole; label: string, icon: React.ComponentType<any> }[] = [
     { id: 'admin', label: 'Admin', icon: Shield },
@@ -16,6 +13,12 @@ export function Navigation({ userRole }: NavigationProps) {
     { id: 'student', label: 'Estudiante', icon: User },
     { id: 'ranking', label: 'Ranking', icon: Trophy },
   ];
+
+  const handleRoleChange = (role: UserRole) => {
+    if (switchUserRole) {
+      switchUserRole(role);
+    }
+  };
 
   return (
     <nav className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
@@ -30,11 +33,10 @@ export function Navigation({ userRole }: NavigationProps) {
             {roles.map(role => {
               const Icon = role.icon;
               const isActive = userRole === role.id;
-              // No onClick for role change anymore, as roles are handled by auth context
               return (
                 <button
                   key={role.id}
-                  // onClick={() => onChangeRole(role.id)} // Removed
+                  onClick={() => handleRoleChange(role.id)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
                     isActive
                       ? 'bg-indigo-600 text-white shadow-md'
@@ -47,7 +49,7 @@ export function Navigation({ userRole }: NavigationProps) {
               );
             })}
             <button
-              onClick={signOut} // Logout button
+              onClick={signOut}
               className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all text-gray-600 hover:bg-gray-100"
             >
               <LogOut className="w-4 h-4 text-gray-500" />
