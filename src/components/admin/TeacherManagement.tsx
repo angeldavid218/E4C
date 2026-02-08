@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { UserPlus, Search } from 'lucide-react';
 import type { Teacher } from '../../types';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase, supabaseAnonKey } from '../../lib/supabaseClient';
 import { createTeacher } from '../../lib/teacher'; // Import the new createTeacher function
 import Select from 'react-select'; // Import react-select
 
@@ -66,6 +66,9 @@ export function TeacherManagement() { // Removed props
         };
         const createdTeacher = await createTeacher(newTeacherData);
 
+        // 1. Obtener la sesión actual
+        const { data: { session } } = await supabase.auth.getSession();
+
         // --- MVP Bypass: Authentication (REMOVE FOR PRODUCTION) ---
         // Since login is not implemented yet, we bypass session check and pass a dummy auth header.
         // This is INSECURE and must be replaced with proper authentication for production.
@@ -80,6 +83,8 @@ export function TeacherManagement() { // Removed props
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session?.access_token}`, // ESTA LINEA ES CLAVE
+              'apikey': supabaseAnonKey
             },
             body: JSON.stringify({ student_id: createdTeacher.id }), // Note: it's student_id in the body, which is used for generic wallet creation
           }

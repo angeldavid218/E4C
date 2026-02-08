@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { UserPlus, Search } from 'lucide-react';
 import type { Student } from '../../types';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase, supabaseAnonKey } from '../../lib/supabaseClient'; // Import supabaseAnonKey
 import { createStudent } from '../../lib/student';
 
 export function StudentManagement() {
@@ -46,11 +46,13 @@ export function StudentManagement() {
         };
         const createdStudent = await createStudent(newStudentData);
 
+        // 1. Obtener la sesión actual
+        const { data: { session } } = await supabase.auth.getSession();
+
         // --- MVP Bypass: Authentication (REMOVE FOR PRODUCTION) ---
         // Since login is not implemented yet, we bypass session check and pass a dummy auth header.
         // This is INSECURE and must be replaced with proper authentication for production.
         console.warn('ADVERTENCIA: Bypass de autenticación activo para MVP. ESTO ES INSEGURO Y DEBE SER REEMPLAZADO PARA PRODUCCIÓN.');
-        const dummyAuthHeader = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24ifQ.BgK64W-B_kQ2GkLg-47k-qQz-rG1-t-k-0-l-0-l-0'; // Dummy JWT
         // --- END MVP Bypass ---
 
         // Now, trigger wallet creation via the new Edge Function
@@ -60,6 +62,8 @@ export function StudentManagement() {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session?.access_token}`, // ESTA LINEA ES CLAVE
+              'apikey': supabaseAnonKey
             },
             body: JSON.stringify({ student_id: createdStudent.id }),
           }
