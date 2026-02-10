@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import * as StellarSdk from 'https://esm.sh/stellar-sdk@12.3.0';
+import { Horizon, Keypair, TransactionBuilder, Operation, BASE_FEE } from 'https://esm.sh/stellar-sdk@12.3.0';
 
-const horizonServer = new StellarSdk.Horizon.Server("https://horizon-testnet.stellar.org");
+const horizonServer = new Horizon.Server("https://horizon-testnet.stellar.org");
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -87,18 +87,18 @@ serve(async (req) => {
 
 
     // 1. Create a new Stellar keypair
-    const masterKeypair = StellarSdk.Keypair.random();
+    const masterKeypair = Keypair.random();
     const masterPublicKey = masterKeypair.publicKey();
     const masterSecret = masterKeypair.secret();
 
-    const deviceKeypair = StellarSdk.Keypair.random();
+    const deviceKeypair = Keypair.random();
     const devicePublicKey = deviceKeypair.publicKey();
     const deviceSecret = deviceKeypair.secret();
 
-    const recoverySigner1Keypair = StellarSdk.Keypair.random();
+    const recoverySigner1Keypair = Keypair.random();
     const recoverySigner1PublicKey = recoverySigner1Keypair.publicKey();
 
-    const recoverySigner2Keypair = StellarSdk.Keypair.random();
+    const recoverySigner2Keypair = Keypair.random();
     const recoverySigner2PublicKey = recoverySigner2Keypair.publicKey();
 
     // 2. Fund the new account
@@ -107,28 +107,28 @@ serve(async (req) => {
     // 3. Configure multi-signature
     try {
       const account = await horizonServer.loadAccount(masterPublicKey);
-      const transaction = new StellarSdk.TransactionBuilder(account, {
-        fee: StellarSdk.BASE_FEE
+      const transaction = new TransactionBuilder(account, {
+        fee: BASE_FEE
       })
-        .addOperation(StellarSdk.Operation.setOptions({
+        .addOperation(Operation.setOptions({
           signer: {
             ed25519PublicKey: devicePublicKey,
             weight: 1
           }
         }))
-        .addOperation(StellarSdk.Operation.setOptions({
+        .addOperation(Operation.setOptions({
           signer: {
             ed25519PublicKey: recoverySigner1PublicKey,
             weight: 1
           }
         }))
-        .addOperation(StellarSdk.Operation.setOptions({
+        .addOperation(Operation.setOptions({
           signer: {
             ed25519PublicKey: recoverySigner2PublicKey,
             weight: 1
           }
         }))
-        .addOperation(StellarSdk.Operation.setOptions({
+        .addOperation(Operation.setOptions({
           masterWeight: 0, // "Secure erase" the master key
           lowThreshold: 1, // Device key alone can perform low-security operations
           mediumThreshold: 2, // Device + 1 Recovery, or 2 Recovery
