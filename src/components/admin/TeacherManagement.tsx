@@ -97,13 +97,10 @@ export function TeacherManagement() { // Removed props
           throw new Error(data.error || 'Failed to trigger wallet creation.');
         }
 
-        const { device_secret_key } = data;
+        const { stellar_public_key, stellar_secret_key } = data;
 
-        // Securely store device_secret_key (with a warning for prototype)
-        if (device_secret_key) {
-          localStorage.setItem(`educhain_v1_auth_${createdTeacher.id}`, btoa(device_secret_key));
-          console.warn('ADVERTENCIA: La clave secreta del dispositivo se ha almacenado en localStorage con codificación Base64. Esto NO es seguro para aplicaciones de alto valor. Considere usar Web Crypto API o IndexedDB con encriptación para producción.');
-        }
+        // Display critical alert for the user to save their secret key
+        alert(`¡Billetera Stellar creada exitosamente!\n\nIMPORTANTE: Guarda esta clave privada en un lugar seguro. La necesitarás para acceder a tu billetera.\n\nCLAVE PRIVADA: ${stellar_secret_key}\n\nNO compartas esta clave con nadie.`);
 
         // Re-fetch the teacher from the database to ensure we have the most up-to-date data,
         // including the stellar_public_key updated by the Edge Function
