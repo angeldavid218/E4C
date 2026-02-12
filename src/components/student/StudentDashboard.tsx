@@ -94,10 +94,10 @@ export function StudentDashboard({ studentId, nftRequests: propNftRequests }: St
   const student = studentData; // Use fetched data
 
   const tabs = [
+    { id: 'my-tasks' as StudentView, label: 'Mis Tareas', icon: ClipboardList, color: 'emerald' }, // New tab, now first
     { id: 'tokens' as StudentView, label: 'Mis Tokens', icon: Coins, color: 'indigo' },
     { id: 'nfts' as StudentView, label: 'Mis Logros NFT', icon: Trophy, color: 'purple' },
     { id: 'marketplace' as StudentView, label: 'Marketplace', icon: ShoppingBag, color: 'pink' },
-    { id: 'my-tasks' as StudentView, label: 'Mis Tareas', icon: ClipboardList, color: 'emerald' }, // New tab
   ];
 
   return (
