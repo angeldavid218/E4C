@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "https://esm.sh/@supabase/supabase-js@2.39.7": "https://esm.sh/@supabase/supabase-js@2.39.7",
+    "stellar-base": "https://esm.sh/stellar-base@12.1.0?bundle&target=browser"
+  }
+}

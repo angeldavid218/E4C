@@ -13,6 +13,7 @@
     "@stellar/stellar-sdk": "^14.5.0",
     "@supabase/supabase-js": "^2.95.3",
     "lucide-react": "^0.303.0",
+    "qrcode.react": "^4.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-select": "^5.10.2",

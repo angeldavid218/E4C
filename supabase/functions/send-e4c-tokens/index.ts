@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      Deno.env.get("SB_SERVICE_ROLE_KEY") ?? ""
     )
 
     const { studentId, amount, studentTaskId } = await req.json();
@@ -108,8 +108,7 @@ Deno.serve(async (req) => {
     }
 
     // --- PASO 5: ACTUALIZACIÓN DE ESTADO ACADÉMICO Y BALANCE ---
-    // Solo si el pago en blockchain tuvo éxito, marcamos la tarea como validada
-    // y actualizamos el balance de tokens en la tabla de estudiantes.
+    // Solo si el pago en blockchain tuvo éxito, marcamos la tarea como validada.
     const { error: updateError } = await supabaseClient
       .from('student_tasks')
       .update({ status: 'validator_approved' })
@@ -117,17 +116,41 @@ Deno.serve(async (req) => {
 
     if (updateError) console.error("Error al actualizar estado post-transferencia:", updateError);
 
-    // Actualizar el conteo de tokens en la tabla 'students' para que el Ranking se vea reflejado
-    const { error: balanceError } = await supabaseClient.rpc('increment_student_tokens', { 
-      row_id: studentId, 
-      amount_to_add: parseInt(amount.toString()) 
-    });
+    // Recalcular el total de tokens del estudiante basándose en todas sus tareas aprobadas.
+    // Esto asegura que la columna 'tokens' en 'students' siempre refleje la suma correcta.
+    const { data: approvedTasks, error: fetchApprovedTasksError } = await supabaseClient
+      .from('student_tasks')
+      .select('task_id')
+      .eq('student_id', studentId)
+      .eq('status', 'validator_approved');
 
-    if (balanceError) {
-      console.error("Error al incrementar tokens en DB:", balanceError);
-      // Fallback si el RPC no existe: actualización manual (menos segura ante concurrencia pero efectiva)
-      const { data: currentStudent } = await supabaseClient.from('students').select('tokens').eq('id', studentId).single();
-      await supabaseClient.from('students').update({ tokens: (currentStudent?.tokens || 0) + parseInt(amount.toString()) }).eq('id', studentId);
+    if (fetchApprovedTasksError) {
+      console.error("Error al obtener tareas aprobadas para recalcular tokens:", fetchApprovedTasksError);
+      // Continuar sin actualizar el balance de tokens si falla la obtención de tareas
+    } else {
+      const taskIds = approvedTasks.map(at => at.task_id);
+      const tasksCompletedCount = approvedTasks.length; // Count of approved tasks
+
+      const { data: tasksData, error: fetchTasksDataError } = await supabaseClient
+        .from('tasks')
+        .select('points')
+        .in('id', taskIds);
+
+      if (fetchTasksDataError) {
+        console.error("Error al obtener puntos de tareas para recalcular tokens:", fetchTasksDataError);
+      } else {
+        const totalTokens = tasksData.reduce((sum, task) => sum + (task.points || 0), 0);
+
+        // Update both tokens and tasks_completed
+        const { error: updateStudentMetricsError } = await supabaseClient
+          .from('students')
+          .update({ tokens: totalTokens, tasks_completed: tasksCompletedCount })
+          .eq('id', studentId);
+
+        if (updateStudentMetricsError) {
+          console.error("Error al actualizar las métricas del estudiante (tokens, tasks_completed):", updateStudentMetricsError);
+        }
+      }
     }
 
     return new Response(

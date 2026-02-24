@@ -87,7 +87,7 @@ serve(async (req) => {
         headers: {
           'Content-Type': 'application/json',
           // Pass the SERVICE_ROLE_KEY here for internal function-to-function call
-          'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          'Authorization': `Bearer ${Deno.env.get("SB_SERVICE_ROLE_KEY")}`,
         },
         body: JSON.stringify({ student_id }),
       }

@@ -19,10 +19,11 @@ export function StudentManagement({ onSelectStudent, students: propsStudents }: 
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null); // Nuevo estado para el estudiante seleccionado
 
   // Estados para el Modal de Éxito
-  const [successModal, setSuccessModal] = useState<{ show: boolean; name: string; secretKey: string }>({
+  const [successModal, setSuccessModal] = useState<{ show: boolean; name: string; secretKey: string; publicKey: string }>({
     show: false,
     name: '',
-    secretKey: ''
+    secretKey: '',
+    publicKey: ''
   });
   const [showSecret, setShowSecret] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -117,7 +118,8 @@ export function StudentManagement({ onSelectStudent, students: propsStudents }: 
         setSuccessModal({
           show: true,
           name: createdStudent.name,
-          secretKey: secretKey
+          secretKey: secretKey,
+          publicKey: publicKey
         });
         setShowSecret(false);
         
@@ -299,33 +301,39 @@ export function StudentManagement({ onSelectStudent, students: propsStudents }: 
                   
                   <div className="p-6 space-y-4">
                     <p className="text-sm text-gray-600 text-center">
-                      Se ha generado la billetera Stellar. Guarda la clave secreta en un lugar seguro ahora mismo.
+                      Se ha generado la billetera Stellar. Guarda las claves en un lugar seguro ahora mismo.
                     </p>
                     
                     <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Clave Pública (Public Key)</p>
+                      <code className="block bg-white px-2 py-1.5 rounded border border-gray-200 text-xs break-all font-mono">
+                        {successModal.publicKey}
+                      </code>
+                    </div>
+
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                       <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Clave Secreta (Secret Key)</p>
-                                      <div className="flex items-center gap-2">
-                                        <code className="flex-1 bg-white px-2 py-1.5 rounded border border-gray-200 text-xs break-all font-mono">
-                                          {showSecret ? successModal.secretKey : '*******************************************************'}
-                                        </code>
-                                        <div className="flex gap-1">
-                                          <button
-                                            onClick={() => setShowSecret(!showSecret)}
-                                            className="p-2 hover:bg-gray-200 rounded-lg transition-colors text-gray-500"
-                                            title="Mostrar/Ocultar"
-                                          >
-                                            {showSecret ? <EyeOff size={18} /> : <Eye size={18} />}
-                                          </button>
-                                          <button
-                                            onClick={() => handleCopy(successModal.secretKey)}
-                                            className="p-2 hover:bg-gray-200 rounded-lg transition-colors text-gray-500"
-                                            title="Copiar"
-                                          >
-                                            {copied ? <Check size={18} className="text-green-600" /> : <Copy size={18} />}
-                                          </button>
-                                        </div>
-                                      </div>
-                      
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 bg-white px-2 py-1.5 rounded border border-gray-200 text-xs break-all font-mono">
+                          {showSecret ? successModal.secretKey : '*******************************************************'}
+                        </code>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => setShowSecret(!showSecret)}
+                            className="p-2 hover:bg-gray-200 rounded-lg transition-colors text-gray-500"
+                            title="Mostrar/Ocultar"
+                          >
+                            {showSecret ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                          <button
+                            onClick={() => handleCopy(successModal.secretKey)}
+                            className="p-2 hover:bg-gray-200 rounded-lg transition-colors text-gray-500"
+                            title="Copiar"
+                          >
+                            {copied ? <Check size={18} className="text-green-600" /> : <Copy size={18} />}
+                          </button>
+                        </div>
+                      </div>
                     </div>
       
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-3 items-start text-amber-800">

@@ -268,7 +268,7 @@ export default function App() {
 
       case 'ranking':
 
-        return <RankingDashboard students={allStudents} />;
+        return <RankingDashboard />;
 
       default:
 

@@ -4,12 +4,13 @@ import { useAuth } from '../../authContext';
 import type { Teacher } from '../../types';
 import { 
   Users, UserPlus, BookCopy, UserCheck, CreditCard, 
-  DollarSign, ShieldCheck, Eye, EyeOff, Copy, Check, Hourglass, X 
+  DollarSign, ShieldCheck, Eye, EyeOff, Copy, Check, Hourglass, X, Warehouse 
 } from 'lucide-react';
 import { StudentManagement } from './StudentManagement';
 import { TeacherManagement } from './TeacherManagement';
 import { ValidatorManagement } from './ValidatorManagement';
 import UserApproval from './UserApproval';
+import { EscrowManagement } from './EscrowManagement'; // Import the new component
 import * as StellarSdk from '@stellar/stellar-sdk';
 
 export default function AdminDashboard() {
@@ -20,7 +21,7 @@ export default function AdminDashboard() {
     return allAdmins.find(admin => admin.id === user.id);
   }, [user?.id, allAdmins]);
 
-  const [activeView, setActiveView] = useState<'students' | 'teachers' | 'approve' | 'stellar-setup' | 'validators'>('stellar-setup');
+  const [activeView, setActiveView] = useState<'students' | 'teachers' | 'validators' | 'approve' | 'stellar-setup' | 'escrow-setup'>('stellar-setup'); // Add 'escrow-setup'
   
   // Estados Stellar
   const [isCreatingStellarAccounts, setIsCreatingStellarAccounts] = useState(false);
@@ -36,8 +37,8 @@ export default function AdminDashboard() {
 
   // Estados Modal Éxito y Carga
   const [isProcessing, setIsProcessing] = useState(false);
-  const [successModal, setSuccessModal] = useState<{show: boolean; name: string; role: string; secretKey: string}>({
-    show: false, name: '', role: '', secretKey: ''
+  const [successModal, setSuccessModal] = useState<{show: boolean; name: string; role: string; secretKey: string; publicKey: string}>({
+    show: false, name: '', role: '', secretKey: '', publicKey: ''
   });
   const [showCreatedSecret, setShowCreatedSecret] = useState(false);
   
@@ -50,7 +51,7 @@ export default function AdminDashboard() {
     const fetchStellarWallets = async () => {
       if (!currentAdmin?.id) return;
       const { data: wallets } = await supabase.from('stellar_wallets').select('*').eq('admin_id', currentAdmin.id);
-      if (wallets && wallets.length === 2) {
+      if (wallets) {
         const issuer = wallets.find(w => w.role === 'issuer');
         const distributor = wallets.find(w => w.role === 'distributor');
         if (issuer && distributor) {
@@ -80,14 +81,14 @@ export default function AdminDashboard() {
       if (tErr) throw tErr;
 
       const { error: wErr } = await supabase.from('stellar_wallets').insert([{
-        teacher_id: created.id, public_key: pair.publicKey(), secret_key: pair.secret(), role: 'teacher', admin_id: null
+        teacher_id: created.id, public_key: pair.publicKey(), secret_key: pair.secret(), role: 'teacher'
       }]);
       if (wErr) {
         await supabase.from('teachers').delete().eq('id', created.id);
         throw wErr;
       }
 
-      setSuccessModal({ show: true, name: created.name, role: 'Docente', secretKey: pair.secret() });
+      setSuccessModal({ show: true, name: created.name, role: 'Docente', secretKey: pair.secret(), publicKey: pair.publicKey() });
       setShowCreatedSecret(false);
       await refreshUsers();
     } catch (err: any) {
@@ -105,14 +106,14 @@ export default function AdminDashboard() {
       if (vErr) throw vErr;
 
       const { error: wErr } = await supabase.from('stellar_wallets').insert([{
-        validator_id: created.id, public_key: pair.publicKey(), secret_key: pair.secret(), role: 'validator', admin_id: null
+        validator_id: created.id, public_key: pair.publicKey(), secret_key: pair.secret(), role: 'validator'
       }]);
       if (wErr) {
         await supabase.from('validators').delete().eq('id', created.id);
         throw wErr;
       }
 
-      setSuccessModal({ show: true, name: created.name, role: 'Validador', secretKey: pair.secret() });
+      setSuccessModal({ show: true, name: created.name, role: 'Validador', secretKey: pair.secret(), publicKey: pair.publicKey() });
       setShowCreatedSecret(false);
       await refreshUsers();
     } catch (err: any) {
@@ -243,7 +244,8 @@ export default function AdminDashboard() {
           { id: 'teachers', label: 'Docentes', icon: BookCopy, color: 'purple' },
           { id: 'validators', label: 'Validadores', icon: ShieldCheck, color: 'green' },
           { id: 'approve', label: 'Aprobar', icon: UserCheck, color: 'blue' },
-          { id: 'stellar-setup', label: 'Stellar', icon: CreditCard, color: 'yellow' },
+          { id: 'stellar-setup', label: 'Cuentas Stellar', icon: CreditCard, color: 'yellow' },
+          { id: 'escrow-setup', label: 'Bóveda E4C', icon: Warehouse, color: 'teal' }, // New tab
         ].map(tab => (
           <button
             key={tab.id}
@@ -267,7 +269,7 @@ export default function AdminDashboard() {
         
         {activeView === 'stellar-setup' && (
           <div className="space-y-6">
-            <h3 className="text-lg font-bold flex items-center gap-2"><CreditCard className="text-yellow-600" /> Configuración de Cuentas Stellar (E4C)</h3>
+            <h3 className="text-lg font-bold flex items-center gap-2"><CreditCard className="text-yellow-600" /> Configuración de Cuentas Stellar (Emisor/Distribuidor)</h3>
             
             {!stellarAccountCreationResult ? (
               <button onClick={handleCreateStellarAccounts} disabled={isCreatingStellarAccounts} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg">
@@ -324,6 +326,8 @@ export default function AdminDashboard() {
             )}
           </div>
         )}
+        
+        {activeView === 'escrow-setup' && currentAdmin?.id && <EscrowManagement adminId={currentAdmin.id} />} {/* Render the new component */}
       </div>
 
       {/* OVERLAYS */}
@@ -349,7 +353,13 @@ export default function AdminDashboard() {
             </div>
             <div className="p-8 space-y-6">
               <div className="bg-gray-50 border-2 border-gray-100 rounded-2xl p-5 space-y-3">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Secret Key</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Clave Pública (Public Key)</p>
+                <code className="block bg-white p-2 rounded-xl border border-gray-200 text-xs font-mono break-all leading-relaxed text-gray-800 shadow-sm">
+                  {successModal.publicKey}
+                </code>
+              </div>
+              <div className="bg-gray-50 border-2 border-gray-100 rounded-2xl p-5 space-y-3">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Clave Secreta (Secret Key)</p>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 bg-white p-2 rounded-xl border border-gray-200 text-xs font-mono break-all leading-relaxed text-gray-800 shadow-sm">
                     {showCreatedSecret ? successModal.secretKey : '•••••••••••••••••••••••••••••••••••••••••••••••••••••••'}

@@ -1,132 +1,166 @@
-import { useState, useEffect } from 'react';
-import { Coins, ShoppingBag, CheckCircle } from 'lucide-react';
-import { type Reward, type Student } from '../../types';
+import { useState, useEffect, useCallback } from 'react';
+import { Coins, ShoppingBag, CheckCircle, Ticket, QrCode, Hourglass } from 'lucide-react';
+import { type Reward } from '../../types';
+import { supabase } from '../../lib/supabaseClient'; // Necesario para obtener el balance del estudiante
+import * as StellarSdk from '@stellar/stellar-sdk'; // Necesario para Stellar
+
 
 
 interface MarketplaceProps {
-  studentId: string | undefined; // Assuming studentId is passed as a prop
+  studentId: string | undefined;
 }
 
 export function Marketplace({ studentId }: MarketplaceProps) {
-  // --- Estados Locales del Componente ---
-  // Gestionan el comportamiento y la visualización específica del Marketplace.
-  const [selectedReward, setSelectedReward] = useState<Reward | null>(null); // Recompensa seleccionada para canjear.
-  const [showConfirmation, setShowConfirmation] = useState(false); // Controla la visibilidad de la notificación de éxito.
-  // Datos simulados para estudiantes y recompensas. En una app real, vendrían de un contexto o API.
-  const mockStudents: Student[] = [
-    { id: 'demo-student-id', name: 'Jorge Luis Borges', email: 'jorge.borges@example.com', enrollmentDate: '2023-09-01', tokens: 250, tasksCompleted: 15, nfts: [], grade: '10th' },
+  const [e4cBalance, setE4cBalance] = useState<string>('0');
+  const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showQR, setShowQR] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState<string>(''); // Para almacenar el UUID/hash del voucher
+  const [processingTransaction, setProcessingTransaction] = useState(false);
+  const [transactionSuccess, setTransactionSuccess] = useState(false);
+  const [transactionError, setTransactionError] = useState<string | null>(null);
+
+  const initialRewards: Reward[] = [
+    { id: 'reward-1', name: 'Entrada 2D - Cine', description: 'Válido para cualquier función de lunes a jueves en salas seleccionadas.', cost: 100, category: 'Cine', image: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=800&q=80', available: 10 },
+    { id: 'reward-2', name: 'Obra: "El Método"', description: 'Pase para 1 persona en el Teatro San Martín. Funciones de fin de semana.', cost: 250, category: 'Teatro', image: 'https://images.unsplash.com/photo-1503095396549-80705bc06179?auto=format&fit=crop&w=800&q=80', available: 5 },
+    { id: 'reward-3', name: 'Membresía MALBA', description: 'Acceso ilimitado por 1 mes y catálogo digital de exposiciones.', cost: 400, category: 'Museos', image: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80', available: 3 },
   ];
 
-  const mockRewards: Reward[] = [
-    { id: 'reward-1', name: 'Certificado de Reconocimiento', description: 'Certificado digital por tu esfuerzo académico.', cost: 50, category: 'Educación', image: '📜', available: 10 },
-    { id: 'reward-2', name: 'Descuento en Tienda Escolar', description: '10% de descuento en la tienda de la escuela.', cost: 75, category: 'Alimentos', image: '🛍️', available: 5 },
-    { id: 'reward-3', name: 'Pase VIP para Evento', description: 'Acceso exclusivo a un evento escolar.', cost: 100, category: 'Entretenimiento', image: '🌟', available: 3 },
-  ];
-
-  const [rewards, setRewards] = useState<Reward[]>(mockRewards);
-  const [currentStudent, setCurrentStudent] = useState<Student | undefined>(
-    mockStudents.find((s) => s.id === studentId)
-  );
-  const [userTokens, setUserTokens] = useState(currentStudent?.tokens || 0); // Tokens del estudiante actual.
+  const [rewards, setRewards] = useState<Reward[]>(initialRewards);
+  const [filterCategory, setFilterCategory] = useState<string>('Todos');
 
   const categories = [
     'Todos',
-    'Educación',
-    'Entretenimiento',
-    'Alimentos',
-    'Tecnología',
-    'Accesorios',
+    ...Array.from(new Set(initialRewards.map(r => r.category)))
   ];
 
-  const [filterCategory, setFilterCategory] = useState<string>('Todos');
-
-  // Sincroniza los tokens del estudiante con el estado local 'userTokens' cada vez que el 'currentStudent' cambia.
-  useEffect(() => {
-    if (currentStudent) {
-      setUserTokens(currentStudent.tokens);
+  const fetchStellarBalance = useCallback(async () => {
+    if (!studentId) {
+      setE4cBalance('0');
+      return;
     }
-  }, [currentStudent]);
 
+    try {
+      const { data: student, error: studentError } = await supabase
+        .from('students')
+        .select('stellar_public_key')
+        .eq('id', studentId)
+        .single();
 
+      if (studentError || !student?.stellar_public_key) {
+        throw new Error("No se encontró la clave pública Stellar del estudiante.");
+      }
 
+      const publicKey = student.stellar_public_key;
+      const server = new StellarSdk.Horizon.Server('https://horizon-testnet.stellar.org');
+      const account = await server.accounts().accountId(publicKey).call();
+      
+      const { data: issuerWallet } = await supabase
+        .from('stellar_wallets')
+        .select('public_key')
+        .eq('role', 'issuer')
+        .limit(1)
+        .single();
 
-  // --- Lógica de Filtrado de Recompensas ---
-  // Filtra las recompensas mostradas basándose en la categoría seleccionada por el usuario.
+      const e4c = account.balances.find(
+        (b: any) => b.asset_code === 'E4C' && b.asset_issuer === issuerWallet?.public_key
+      );
+      setE4cBalance(e4c ? e4c.balance : '0');
+    } catch (err: any) {
+      console.error("Error fetching Stellar balance:", err.message);
+      setE4cBalance('0');
+    }
+  }, [studentId]);
+
+  useEffect(() => {
+    fetchStellarBalance();
+  }, [studentId, fetchStellarBalance]);
+
   const filteredRewards =
     filterCategory === 'Todos'
       ? rewards
       : rewards.filter((r) => r.category === filterCategory);
 
-  // Maneja la selección inicial de una recompensa para mostrar el modal de confirmación.
-  const handleRedeem = (reward: Reward) => {
+  const openModal = (reward: Reward) => {
     setSelectedReward(reward);
+    setShowConfirmation(true);
+    setShowQR(false);
+    setTransactionSuccess(false);
+    setTransactionError(null);
   };
 
-  // --- Lógica de Canje de Recompensa ---
-  // Esta función simula el proceso de canje.
-  // IMPORTANTE: Actualmente, los cambios son solo a nivel de estado local del componente.
-  // En una aplicación real, esto implicaría una interacción con un backend o contrato inteligente
-  // para actualizar los tokens del estudiante globalmente y registrar el canje.
-  const confirmRedeem = async () => {
-    if (selectedReward && currentStudent && userTokens >= selectedReward.cost) {
-      // Actualizar tokens del estudiante localmente
-      setCurrentStudent((prevStudent) => {
-        if (prevStudent) {
-          const updatedStudent = { ...prevStudent, tokens: prevStudent.tokens - selectedReward.cost };
-          setUserTokens(updatedStudent.tokens);
-          return updatedStudent;
-        }
-        return prevStudent;
+  const closeModal = () => {
+    setSelectedReward(null);
+    setShowConfirmation(false);
+    setShowQR(false);
+    setProcessingTransaction(false);
+    setTransactionSuccess(false);
+    setTransactionError(null);
+    fetchStellarBalance(); // Refrescar balance al cerrar el modal
+  };
+
+  const confirmTransaction = async () => {
+    if (!selectedReward || !studentId) return;
+
+    setProcessingTransaction(true);
+    setTransactionError(null);
+
+    try {
+      // Invocar la Edge Function para realizar la transacción Stellar
+      const { data, error } = await supabase.functions.invoke('redeem-e4c-tokens', {
+        body: { 
+          studentId: studentId,
+          amount: selectedReward.cost,
+          rewardId: selectedReward.id
+        },
       });
 
-      // Actualizar el contador de recompensas disponibles localmente
-      setRewards((prevRewards) =>
-        prevRewards.map((r) =>
-          r.id === selectedReward.id
-            ? { ...r, available: r.available - 1 }
-            : r
-        )
-      );
+      if (error) {
+        console.error('Error invoking redeem-e4c-tokens:', error);
+        throw new Error(error.message || "Error desconocido al canjear tokens.");
+      }
 
-      setShowConfirmation(true); // Mostrar notificación de éxito
-      setTimeout(() => {
-        setShowConfirmation(false); // Ocultar notificación tras 3 segundos
-        setSelectedReward(null); // Cerrar modal de confirmación
-      }, 3000);
+      if (data && data.success) {
+        setQrCodeData(data.voucher_uuid); // Usar el UUID generado por la Edge Function
+        setTransactionSuccess(true);
+        setShowConfirmation(false);
+        setShowQR(true);
+      } else {
+        throw new Error(data?.message || "Fallo en la transacción Stellar.");
+      }
+
+    } catch (err: any) {
+      console.error("Error en la confirmación de la transacción:", err.message);
+      setTransactionError(err.message);
+    } finally {
+      setProcessingTransaction(false);
     }
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h2>Marketplace de Recompensas</h2>
-          <p className="text-gray-600 mt-1">
-            Canjea tus tokens por increíbles recompensas
-          </p>
+          <h2 className="text-2xl font-bold text-slate-900">Marketplace Cultural</h2>
+          <p className="text-slate-500 italic">Canjea tus logros académicos por cultura.</p>
         </div>
-        <div className="bg-white rounded-xl px-6 py-4 border-2 border-indigo-200 shadow-sm">
-          <div className="flex items-center gap-2">
-            <Coins className="w-5 h-5 text-indigo-600" />
-            <div>
-              <p className="text-xs text-gray-600">Tus Tokens</p>
-              <p className="text-indigo-600">{userTokens}</p>
-            </div>
-          </div>
+        <div className="text-right">
+          <span className="block text-sm text-slate-400">Tu Saldo</span>
+          <span className="text-2xl font-bold text-indigo-600">
+            {parseFloat(e4cBalance).toLocaleString('es-ES', { maximumFractionDigits: 2 })} $E4C
+          </span>
         </div>
       </div>
 
-      {/* Filtros de Categoría */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      {/* Filtros Rápidos */}
+      <div className="flex gap-4 mb-8 overflow-x-auto pb-2">
         {categories.map(category => (
-          <button
+          <button 
             key={category}
             onClick={() => setFilterCategory(category)}
-            className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
-              filterCategory === category
-                ? 'bg-indigo-600 text-white'
-                : 'bg-white text-gray-700 border border-gray-200 hover:border-indigo-300'
+            className={`px-6 py-2 rounded-full font-medium transition ${
+              filterCategory === category ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
             }`}
           >
             {category}
@@ -134,115 +168,89 @@ export function Marketplace({ studentId }: MarketplaceProps) {
         ))}
       </div>
 
-      {/* Grid de Recompensas */}
+      {/* Grid de Productos */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredRewards.map(reward => {
-          const canAfford = userTokens >= reward.cost;
+          const canAfford = parseFloat(e4cBalance) >= reward.cost;
           return (
-            <div
-              key={reward.id}
-              className={`bg-white rounded-xl border-2 overflow-hidden transition-all ${
-                canAfford
-                  ? 'border-gray-200 hover:border-indigo-400 hover:shadow-lg'
-                  : 'border-gray-100 opacity-60'
-              }`}
+            <div 
+              key={reward.id} 
+              className={`bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition ${!canAfford && 'opacity-60 grayscale'}`}
             >
-              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-8 flex items-center justify-center">
-                <div className="text-7xl">{reward.image}</div>
+              <div className="h-48 bg-slate-200 relative">
+                <img src={reward.image} alt={reward.name} className="w-full h-full object-cover" />
+                <span className={`absolute top-4 left-4 ${
+                  reward.category === 'Cine' ? 'bg-indigo-600' : 
+                  reward.category === 'Teatro' ? 'bg-purple-600' : 
+                  'bg-amber-500'
+                } text-white px-3 py-1 rounded-full text-xs font-bold uppercase`}>{reward.category}</span>
               </div>
               <div className="p-6">
-                <div className="flex items-start justify-between mb-3">
-                  <h4 className="text-gray-900 flex-1">{reward.name}</h4>
-                  <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs ml-2">
-                    {reward.category}
-                  </span>
+                <h3 className="text-xl font-bold mb-2">{reward.name}</h3>
+                <p className="text-slate-600 text-sm mb-4">{reward.description}</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-bold text-indigo-600">{reward.cost} $E4C</span>
+                  <button 
+                    onClick={() => openModal(reward)} 
+                    disabled={!canAfford || processingTransaction}
+                    className="bg-slate-900 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Canjear
+                  </button>
                 </div>
-                <p className="text-gray-600 text-sm mb-4">
-                  {reward.description}
-                </p>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Coins className="w-4 h-4 text-indigo-600" />
-                    <span className={canAfford ? 'text-indigo-600' : 'text-red-600'}>
-                      {reward.cost} tokens
-                    </span>
-                  </div>
-                  <span className="text-xs text-gray-500">
-                    {reward.available} disponibles
-                  </span>
-                </div>
-                <button
-                  onClick={() => handleRedeem(reward)}
-                  disabled={!canAfford}
-                  className={`w-full py-3 rounded-lg transition-colors flex items-center justify-center gap-2 ${
-                    canAfford
-                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  }`}
-                >
-                  <ShoppingBag className="w-4 h-4" />
-                  <span>{canAfford ? 'Canjear Ahora' : 'Tokens Insuficientes'}</span>
-                </button>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* --- Renderizado Condicional de Modales y Notificaciones --- */}
-      {/* Modal de Confirmación de Canje */}
-      {selectedReward && !showConfirmation && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <div className="text-center mb-6">
-              <div className="text-6xl mb-4">{selectedReward.image}</div>
-              <h3 className="text-gray-900 mb-2">Confirmar Canje</h3>
-              <p className="text-gray-600">
-                ¿Deseas canjear {selectedReward.cost} tokens por esta recompensa?
-              </p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <h4 className="text-gray-900 mb-2">{selectedReward.name}</h4>
-              <p className="text-gray-600 text-sm mb-3">
-                {selectedReward.description}
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Costo:</span>
-                <span className="text-indigo-600">{selectedReward.cost} tokens</span>
+      {/* Modal de Confirmación / QR */}
+      {(showConfirmation || showQR) && (
+        <div id="modal" className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl max-w-md w-full p-8 text-center">
+            {/* Paso 1: Confirmación de Canje */}
+            {showConfirmation && !transactionSuccess && (
+              <div id="modal-step-1">
+                <h2 className="text-2xl font-bold mb-2">¿Confirmar canje?</h2>
+                <p className="text-slate-500 mb-6" id="modal-desc">
+                  Se debitarán {selectedReward?.cost} $E4C de tu billetera por: {selectedReward?.name}.
+                </p>
+                {transactionError && (
+                  <p className="text-red-500 text-sm mb-4">{transactionError}</p>
+                )}
+                <div className="flex flex-col gap-3">
+                  <button 
+                    onClick={confirmTransaction} 
+                    id="btn-confirm" 
+                    className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-200"
+                    disabled={processingTransaction}
+                  >
+                    {processingTransaction ? <><Hourglass className="inline-block animate-spin mr-2" size={18} /> Procesando en Red Stellar...</> : 'Confirmar en Red Stellar'}
+                  </button>
+                  <button onClick={closeModal} className="w-full py-4 text-slate-400 font-medium">Cancelar</button>
+                </div>
               </div>
-              <div className="flex items-center justify-between mt-2">
-                <span className={userTokens - selectedReward.cost >= 0 ? 'text-green-600' : 'text-red-600'}>
-                  Balance después: {userTokens - selectedReward.cost} tokens
-                </span>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setSelectedReward(null)}
-                className="flex-1 py-3 border-2 border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmRedeem}
-                className="flex-1 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                Confirmar Canje
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            )}
 
-      {/* Notificación de Éxito */}
-      {showConfirmation && (
-        <div className="fixed top-4 right-4 bg-green-600 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 z-50 animate-in slide-in-from-top">
-          <CheckCircle className="w-6 h-6" />
-          <div>
-            <p>¡Canje Exitoso!</p>
-            <p className="text-sm opacity-90">
-              Recibirás tu código por correo electrónico
-            </p>
+            {/* Paso 2: Voucher QR */}
+            {showQR && transactionSuccess && (
+              <div id="modal-step-2">
+                <div className="mb-6 flex justify-center">
+                  <div className="w-48 h-48 bg-slate-100 rounded-2xl flex items-center justify-center border-4 border-indigo-600 p-2">
+                      {qrCodeData ? (
+                          <div className="flex items-center justify-center w-full h-full text-center text-sm font-mono break-all p-2 text-gray-800">
+                            {qrCodeData}
+                          </div>
+                      ) : (
+                          <Ticket className="w-full h-full text-indigo-600 opacity-70" />
+                      )}
+                  </div>
+                </div>
+                <h2 className="text-2xl font-bold mb-2">¡Canje Exitoso!</h2>
+                <p className="text-slate-500 mb-6 text-sm">Presenta este código en la boletería. El comercio validará la transacción con el ID: <br/><span className="font-mono text-indigo-600 font-bold break-all">{qrCodeData || 'STLR-XXXX...'}</span></p>
+                <button onClick={closeModal} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold">Volver al inicio</button>
+              </div>
+            )}
           </div>
         </div>
       )}
