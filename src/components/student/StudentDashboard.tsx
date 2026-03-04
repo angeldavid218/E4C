@@ -18,7 +18,7 @@ interface StudentDashboardProps {
 type StudentView = 'tokens' | 'nfts' | 'marketplace' | 'my-tasks' | 'profile-settings';
 
 export function StudentDashboard({ studentId, nftRequests: propNftRequests }: StudentDashboardProps) {
-  const { allStudents, switchUserRole } = useAuth(); // Obtener de AuthContext
+  const { user, allStudents, switchUserRole } = useAuth(); // Obtener de AuthContext
   const [activeView, setActiveView] = useState<StudentView>('my-tasks');
   const [studentData, setStudentData] = useState<Student | null>(null);
   const [nftRequests, setNftRequests] = useState<NFTRequest[]>(propNftRequests || []);
@@ -26,21 +26,6 @@ export function StudentDashboard({ studentId, nftRequests: propNftRequests }: St
   const [isLinked, setIsLinked] = useState(true);
   const [isLinking, setIsLinking] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  const handleLinkToken = async () => {
-    if (!studentId) return;
-    setIsLinking(true);
-    try {
-      const { error } = await supabase.functions.invoke('link-e4c-token', { body: { studentId } });
-      if (error) throw error;
-      alert("¡Token E4C vinculado con éxito! Ya puedes recibir recompensas.");
-      window.location.reload();
-    } catch (err: any) {
-      alert("Error al vincular: " + err.message);
-    } finally {
-      setIsLinking(false);
-    }
-  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,14 +36,39 @@ export function StudentDashboard({ studentId, nftRequests: propNftRequests }: St
       }
 
       setLoading(true);
-      const { data: student } = await supabase
-        .from('students')
-        .select('*')
-        .eq('id', studentId)
-        .single();
+      let student: Student | null = null;
+
+      if (studentId.startsWith('mock-')) {
+        // If it's a mock student, use the mock user data from auth context
+        if (user && user.user_metadata.role === 'student' && user.id === studentId) {
+          student = {
+            id: user.id,
+            name: user.user_metadata.name || 'Mock Student',
+            email: user.user_metadata.email || 'mock@student.com',
+            enrollmentDate: new Date().toISOString(), // Mock date
+            tokens: 0, // Mock tokens
+            tasksCompleted: 0, // Mock tasks
+            nfts: [], // Mock NFTs
+            grade: '', // Mock grade
+            curso: 'Mock', // Mock curso
+            division: 'A', // Mock division
+            escuela: 'Mock School', // Mock escuela
+            stellar_public_key: undefined, // Mock public key
+            alias: 'mockstudent'
+          };
+        }
+      } else {
+        // Otherwise, fetch from Supabase
+        const { data: fetchedStudent } = await supabase
+          .from('students')
+          .select('*')
+          .eq('id', studentId)
+          .single();
+        student = fetchedStudent as Student;
+      }
 
       if (student) {
-        setStudentData(student as Student);
+        setStudentData(student);
         if (student.stellar_public_key) {
           try {
             const server = new StellarSdk.Horizon.Server('https://horizon-testnet.stellar.org');

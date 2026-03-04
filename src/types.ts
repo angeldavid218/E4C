@@ -112,7 +112,7 @@ export interface TokenTransaction {
   teacherName?: string;
 }
 
-export type UserRole = 'student' | 'teacher' | 'admin' | 'validator' | 'ranking' | 'unauthenticated' | 'unapproved';
+export type UserRole = 'student' | 'teacher' | 'validator' | 'ranking' | 'unauthenticated' | 'unapproved';
 
 export interface NFTRequest {
   id: string;

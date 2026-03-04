@@ -17,6 +17,13 @@ export function MyTasks({ studentId }: MyTasksProps) {
     const fetchStudentTasks = async () => {
       setLoading(true);
       setError(null);
+      if (!studentId || studentId.startsWith('mock-')) {
+        setStudentTasks([]);
+        setTasksDetails(new Map());
+        setLoading(false);
+        return;
+      }
+      
       try {
         const { data: studentTasksData, error: studentTasksError } = await supabase
           .from('student_tasks')

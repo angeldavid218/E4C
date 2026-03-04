@@ -37,7 +37,7 @@ interface AuthContextType {
   switchUserRole: (role: UserRole, id?: string) => Promise<void>; // Make it async here too
   allStudents: Student[];
   allTeachers: Teacher[];
-  allAdmins: Admin[];
+
   allValidators: Validator[];
   currentRole: UserRole;
   refreshUsers: () => Promise<{ currentStudents: Student[]; adminsData: Admin[]; teachersData: Teacher[]; validatorsData: Validator[]; }>;
@@ -48,11 +48,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [currentRole, setCurrentRole] = useState<UserRole>('admin');
+  const [currentRole, setCurrentRole] = useState<UserRole>('student');
   const [loading, setLoading] = useState(true);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [allTeachers, setAllTeachers] = useState<Teacher[]>([]);
-  const [allAdmins, setAllAdmins] = useState<Admin[]>([]);
+  // const [allAdmins, setAllAdmins] = useState<Admin[]>([]);
   const [allValidators, setAllValidators] = useState<Validator[]>([]);
 
   const [registeredEmails, setRegisteredEmails] = useState<Set<string>>(new Set(['test@example.com', 'admin@example.com']));
@@ -137,12 +137,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAllTeachers(teachersData as Teacher[]);
     }
     
-    const { data: adminsData, error: adminsError } = await supabase.from('admins').select('*');
-    if (adminsError) {
-      console.error('Error fetching admins:', adminsError);
-    } else {
-      setAllAdmins(adminsData as Admin[]);
-    }
+    // const { data: adminsData, error: adminsError } = await supabase.from('admins').select('*');
+    // if (adminsError) {
+    //   console.error('Error fetching admins:', adminsError);
+    // } else {
+    //   setAllAdmins(adminsData as Admin[]);
+    // }
     
     const { data: validatorsData, error: validatorsError } = await supabase.from('validators').select('*');
     if (validatorsError) {
@@ -150,7 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       setAllValidators(validatorsData as Validator[]);
     }
-    return { currentStudents, adminsData: adminsData || [], teachersData: teachersData || [], validatorsData: validatorsData || [] };
+    return { currentStudents, adminsData: [], teachersData: teachersData || [], validatorsData: validatorsData || [] };
   }, []);
 
   const switchUserRole = useCallback(async (role: UserRole, id?: string) => { // Make it async and useCallback
@@ -186,41 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
         }
       }
-    } else if (role === 'admin') {
-      let admin = null;
-      if (id) {
-        // Si se proporciona un ID explícito, se busca este administrador directamente en la base de datos para obtener los datos más recientes.
-        const { data: fetchedAdmin, error: fetchError } = await supabase
-          .from('admins')
-          .select('*')
-          .eq('id', id)
-          .single();
-        if (fetchError) {
-          console.error("Error fetching admin for switchUserRole:", fetchError);
-        } else {
-          admin = fetchedAdmin as Admin;
-        }
-      } else if (allAdmins.length > 0) {
-        admin = allAdmins[0]; // Fallback to first existing admin if no ID provided
-      }
 
-      if (admin) {
-        selectedUser = {
-          id: admin.id,
-          app_metadata: {},
-          user_metadata: { ...userMetadata, name: admin.name, email: admin.email },
-          aud: 'authenticated',
-          created_at: new Date().toISOString(),
-        };
-      } else {
-        selectedUser = {
-          id: `mock-admin-id-${Date.now()}`,
-          app_metadata: {},
-          user_metadata: { role: 'admin', name: "Admin (Mock)", email: "mock@admin.com" }, // Corregido: 'userMetadata' no estaba definido en este alcance.
-          aud: 'authenticated',
-          created_at: new Date().toISOString(),
-        };
-      }
     } else if (role === 'validator') {
       const validatorIdToUse = id || (allValidators.length > 0 ? allValidators[0].id : undefined);
       if (validatorIdToUse) {
@@ -259,35 +225,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setSession(mockSession); // Después de establecer el usuario seleccionado, también se establece una sesión de prueba.
 
-  }, [allStudents, allTeachers, allAdmins, allValidators]); // Dependencies need to include relevant state if used inside.
+  }, [allStudents, allTeachers, allValidators]); // Dependencies need to include relevant state if used inside.
 
   useEffect(() => {
     const initialLoad = async () => {
       setLoading(true); // Solo activamos el loading real aquí
-      const { adminsData } = await refreshUsers();
+      const { currentStudents } = await refreshUsers(); // Get currentStudents directly
       
-      // Priorizar la configuración de un usuario administrador
-      if (adminsData.length > 0) {
-        const initialAdmin = adminsData[0];
-        const initialUser = {
-          id: initialAdmin.id,
+      // Prioritize setting the first real student if available
+      if (currentStudents.length > 0) {
+        const firstStudent = currentStudents[0];
+        const initialUser: User = {
+          id: firstStudent.id,
           app_metadata: {},
-          user_metadata: { role: 'admin' as UserRole, name: initialAdmin.name, email: initialAdmin.email },
+          user_metadata: { role: 'student' as UserRole, name: firstStudent.name, email: firstStudent.email },
           aud: 'authenticated',
           created_at: new Date().toISOString(),
         };
         setUser(initialUser);
-      } else {
-        // Si no existen administradores, crear un usuario administrador de prueba
-        const mockAdminUser = {
-          id: `mock-admin-id-${Date.now()}`,
+      } else if (!user) { // Only set a default if no user is already logged in and no real students
+        const mockStudentUser = {
+          id: `mock-student-id-${Date.now()}`,
           app_metadata: {},
-          user_metadata: { role: 'admin' as UserRole, name: "Admin (Mock)", email: "mock@admin.com" }, // Corregido: 'userMetadata' no estaba definido en este alcance.
+          user_metadata: { role: 'student' as UserRole, name: "Student (Mock)", email: "mock@student.com" },
           aud: 'authenticated',
           created_at: new Date().toISOString(),
         };
-        setUser(mockAdminUser);
+        setUser(mockStudentUser);
       }
+      setCurrentRole('student'); // Ensure the current role is student by default
       setLoading(false); // Terminamos el loading inicial
     };
     
@@ -295,7 +261,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [refreshUsers]);
 
   return (
-    <AuthContext.Provider value={{ session, user, currentRole, loading, signIn, signUp, signOut, switchUserRole, allStudents, allTeachers, allAdmins, allValidators, refreshUsers }}>
+    <AuthContext.Provider value={{ session, user, currentRole, loading, signIn, signUp, signOut, switchUserRole, allStudents, allTeachers, allValidators, refreshUsers }}>
       {children}
     </AuthContext.Provider>
   );
