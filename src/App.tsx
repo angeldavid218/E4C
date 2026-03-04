@@ -9,15 +9,17 @@ import { type UserRole, type NFTRequest } from './types';
 import { supabase } from './lib/supabaseClient'; // Importar cliente de Supabase
 import { useAuth } from './authContext';
 import { AuthStatus } from './components/auth/AuthStatus';
+import SplashScreen from './components/shared/SplashScreen';
 
 
 
 export default function App() {
 
-  const { user, currentRole, loading, allStudents, allTeachers } = useAuth();
-
-  const userRole = currentRole;
-
+      const { user, currentRole, loading, allStudents, allTeachers } = useAuth();
+      const userRole = currentRole;
+    
+      const [showSplash, setShowSplash] = useState(true);
+      const handleSplashEnd = () => setShowSplash(false);
 
 
     const [studentTasks, setStudentTasks] = useState<any[]>([]);
@@ -289,23 +291,20 @@ export default function App() {
 
 
   return (
-
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
-
-      <Navigation>
-
-        <AuthStatus />
-
-      </Navigation>
-
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
-
-        {renderDashboard()}
-
-      </main>
-
-    </div>
-
+    <>
+      {showSplash ? (
+        <SplashScreen onAnimationEnd={handleSplashEnd} />
+      ) : (
+        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+          <Navigation>
+            <AuthStatus />
+          </Navigation>
+          <main className="container mx-auto px-4 py-8 max-w-7xl">
+            {renderDashboard()}
+          </main>
+        </div>
+      )}
+    </>
   );
 
 }
