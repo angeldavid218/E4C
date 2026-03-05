@@ -22,7 +22,7 @@ export function ValidatorDashboard({ validatorId: propValidatorId, studentTasks 
 
   // Estados para el modal de rechazo
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
-  const [taskToReject, setTaskToReject] = useState<StudentTask | null>(null);
+  const [taskToReject, setTaskToReject] = useState<StudentTask & { student: Student } | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isRejecting, setIsRejecting] = useState(false);
 
@@ -30,7 +30,7 @@ export function ValidatorDashboard({ validatorId: propValidatorId, studentTasks 
     const fetchContext = async () => {
       if (!propValidatorId) return;
       setLoading(true);
-      
+
       const [vRes, sRes, tRes] = await Promise.all([
         supabase.from('validators').select('*').eq('id', propValidatorId).single(),
         supabase.from('students').select('*'),
@@ -38,7 +38,7 @@ export function ValidatorDashboard({ validatorId: propValidatorId, studentTasks 
       ]);
 
       if (vRes.data) setValidatorData(vRes.data as Validator);
-      
+
       const sMap = new Map();
       sRes.data?.forEach(s => sMap.set(s.id, s));
       setStudentsCache(sMap);
@@ -46,7 +46,7 @@ export function ValidatorDashboard({ validatorId: propValidatorId, studentTasks 
       const tMap = new Map();
       tRes.data?.forEach(t => tMap.set(t.id, t));
       setTasksCache(tMap);
-      
+
       setLoading(false);
     };
     fetchContext();
@@ -62,7 +62,7 @@ export function ValidatorDashboard({ validatorId: propValidatorId, studentTasks 
       }))
       .filter(item => {
         if (!validatorData || !item.student || !item.task) return false;
-        
+
         // 1. Solo tareas aprobadas por docente
         if (item.status !== 'teacher_approved') return false;
 
@@ -71,10 +71,10 @@ export function ValidatorDashboard({ validatorId: propValidatorId, studentTasks 
         if (!isMySchool) return false;
 
         // 3. Filtros manuales
-        const matchSearch = item.student.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            item.task.title.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchSearch = item.student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.task.title.toLowerCase().includes(searchTerm.toLowerCase());
         const matchEscuela = filterEscuela ? item.student.escuela === filterEscuela : true;
-        
+
         return matchSearch && matchEscuela;
       })
       .sort((a, b) => {
@@ -92,8 +92,8 @@ export function ValidatorDashboard({ validatorId: propValidatorId, studentTasks 
     setIsValidating(item.id);
     try {
       const { data, error } = await supabase.functions.invoke('send-e4c-tokens', {
-        body: { 
-          studentId: item.student_id, 
+        body: {
+          studentId: item.student_id,
           amount: item.task.points.toString(),
           studentTaskId: item.id
         },
@@ -102,8 +102,8 @@ export function ValidatorDashboard({ validatorId: propValidatorId, studentTasks 
       if (error) throw error;
 
       alert(`¡Validación Exitosa! Se han enviado ${item.task.points} E4C a ${item.student.name}.`);
-      
-      window.location.reload(); 
+
+      window.location.reload();
     } catch (err: any) {
       console.error("Error en validación:", err);
       alert(`Fallo en la transferencia: ${err.message}`);
@@ -128,8 +128,8 @@ export function ValidatorDashboard({ validatorId: propValidatorId, studentTasks 
       if (error) throw error;
 
       alert(`Tarea de ${taskToReject.student?.name || 'Alumno Desconocido'} rechazada con éxito.`);
-      
-      window.location.reload(); 
+
+      window.location.reload();
     } catch (err: any) {
       console.error("Error al rechazar tarea:", err);
       alert(`Fallo al rechazar la tarea: ${err.message}`);
@@ -140,7 +140,7 @@ export function ValidatorDashboard({ validatorId: propValidatorId, studentTasks 
       setRejectionReason('');
     }
   };
-  
+
   // Early returns for loading/empty states
   if (allValidators.length === 0) {
     return (
@@ -224,14 +224,13 @@ export function ValidatorDashboard({ validatorId: propValidatorId, studentTasks 
                   <p className="text-xs text-gray-500">Materia: {item.task?.subject} • <span className="font-bold text-indigo-600">Recompensa: {item.task?.points} E4C</span></p>
                 </div>
                 <div className="flex gap-2">
-                  <button 
+                  <button
                     onClick={() => handleValidateAndPay(item)}
                     disabled={!!isValidating}
-                    className={`px-4 py-2 rounded-lg font-bold shadow-md transition-all active:scale-95 flex items-center gap-2 ${
-                      isValidating === item.id 
-                        ? 'bg-green-400 text-white cursor-not-allowed' 
+                    className={`px-4 py-2 rounded-lg font-bold shadow-md transition-all active:scale-95 flex items-center gap-2 ${isValidating === item.id
+                        ? 'bg-green-400 text-white cursor-not-allowed'
                         : 'bg-green-600 text-white hover:bg-green-700'
-                    }`}
+                      }`}
                   >
                     {isValidating === item.id ? (
                       <><Hourglass className="animate-spin" size={16} /> Procesando...</>

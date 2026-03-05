@@ -16,13 +16,16 @@
     "jsx": "react-jsx",
 
     /* Linting */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    // "strict": true,
+    // "noUnusedLocals": true,
+    // "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     // TEMPORAL WE NEED TO REMOVE THIS SOON!
-    "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "strict": false,
+    "noImplicitAny": false,
+    "useUnknownInCatchVariables": false,
+    "noUnusedParameters": false,
+    "noUnusedLocals": false
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]

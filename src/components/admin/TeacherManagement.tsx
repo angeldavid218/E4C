@@ -69,7 +69,7 @@ export function TeacherManagement({ teachers, onCreateTeacher }: TeacherManageme
         setNewTeacherEscuela('');
       } catch (err: unknown) {
         console.error('Fallo total:', err);
-        alert(`Error al crear: ${err.message}`);
+        alert(`Error al crear: ${err instanceof Error ? err.message : 'Unknown error'}`);
       }
     } else {
       alert('Por favor, completa todos los campos.'); // Proporcionar retroalimentación para el formulario incompleto

@@ -122,7 +122,7 @@ export function StudentManagement({ onSelectStudent, students: propsStudents }: 
           publicKey: publicKey
         });
         setShowSecret(false);
-        
+
         setStudents(prev => [...prev, createdStudent as Student]);
         setNewStudentName('');
         setNewStudentEmail('');
@@ -132,7 +132,7 @@ export function StudentManagement({ onSelectStudent, students: propsStudents }: 
         // Limpiar campos...
       } catch (err: unknown) {
         console.error("Fallo total al crear estudiante y wallet Stellar:", err);
-        alert(`Error al crear estudiante: ${err.message}`);
+        alert(`Error al crear estudiante: ${err instanceof Error ? err.message : 'Unknown error'}`);
       } finally {
         setIsCreating(false);
       }
@@ -267,105 +267,104 @@ export function StudentManagement({ onSelectStudent, students: propsStudents }: 
         </div>
       </div>
 
-            {selectedStudent && (
-              <div className="flex-1 bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-                <h3 className="text-indigo-900 text-lg font-semibold">Detalles del Estudiante</h3>
-                <p><strong>ID:</strong> {selectedStudent.id}</p>
-                <p><strong>Nombre:</strong> {selectedStudent.name}</p>
-                <p><strong>Email:</strong> {selectedStudent.email}</p>
-                <p><strong>Curso:</strong> {selectedStudent.curso}° "{selectedStudent.division}"</p>
-                <p><strong>Escuela:</strong> {selectedStudent.escuela}</p>
-                <p><strong>Tokens:</strong> {selectedStudent.tokens}</p>
-                <p><strong>Tareas Completadas:</strong> {selectedStudent.tasksCompleted}</p>
-                <p><strong>Public Key Stellar:</strong> {selectedStudent.stellar_public_key}</p>
-                <button
-                  onClick={() => setSelectedStudent(null)}
-                  className="mt-4 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300"
-                >
-                  Cerrar Detalles
-                </button>
-              </div>
-            )}
-      
-            {/* Modal de Éxito de Creación de Alumno */}
-            {successModal.show && (
-              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-                <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
-                  <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 text-white text-center">
-                    <div className="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <CheckCircle size={32} />
-                    </div>
-                    <h3 className="text-xl font-bold">¡Estudiante Creado!</h3>
-                    <p className="opacity-90">{successModal.name}</p>
-                  </div>
-                  
-                  <div className="p-6 space-y-4">
-                    <p className="text-sm text-gray-600 text-center">
-                      Se ha generado la billetera Stellar. Guarda las claves en un lugar seguro ahora mismo.
-                    </p>
-                    
-                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Clave Pública (Public Key)</p>
-                      <code className="block bg-white px-2 py-1.5 rounded border border-gray-200 text-xs break-all font-mono">
-                        {successModal.publicKey}
-                      </code>
-                    </div>
+      {selectedStudent && (
+        <div className="flex-1 bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+          <h3 className="text-indigo-900 text-lg font-semibold">Detalles del Estudiante</h3>
+          <p><strong>ID:</strong> {selectedStudent.id}</p>
+          <p><strong>Nombre:</strong> {selectedStudent.name}</p>
+          <p><strong>Email:</strong> {selectedStudent.email}</p>
+          <p><strong>Curso:</strong> {selectedStudent.curso}° "{selectedStudent.division}"</p>
+          <p><strong>Escuela:</strong> {selectedStudent.escuela}</p>
+          <p><strong>Tokens:</strong> {selectedStudent.tokens}</p>
+          <p><strong>Tareas Completadas:</strong> {selectedStudent.tasksCompleted}</p>
+          <p><strong>Public Key Stellar:</strong> {selectedStudent.stellar_public_key}</p>
+          <button
+            onClick={() => setSelectedStudent(null)}
+            className="mt-4 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300"
+          >
+            Cerrar Detalles
+          </button>
+        </div>
+      )}
 
-                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Clave Secreta (Secret Key)</p>
-                      <div className="flex items-center gap-2">
-                        <code className="flex-1 bg-white px-2 py-1.5 rounded border border-gray-200 text-xs break-all font-mono">
-                          {showSecret ? successModal.secretKey : '*******************************************************'}
-                        </code>
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => setShowSecret(!showSecret)}
-                            className="p-2 hover:bg-gray-200 rounded-lg transition-colors text-gray-500"
-                            title="Mostrar/Ocultar"
-                          >
-                            {showSecret ? <EyeOff size={18} /> : <Eye size={18} />}
-                          </button>
-                          <button
-                            onClick={() => handleCopy(successModal.secretKey)}
-                            className="p-2 hover:bg-gray-200 rounded-lg transition-colors text-gray-500"
-                            title="Copiar"
-                          >
-                            {copied ? <Check size={18} className="text-green-600" /> : <Copy size={18} />}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-      
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-3 items-start text-amber-800">
-                      <ShieldCheck size={20} className="shrink-0 mt-0.5" />
-                      <p className="text-xs">
-                        Si pierdes esta clave, el alumno no podrá acceder a sus tokens o logros. No se puede recuperar.
-                      </p>
-                    </div>
-      
+      {/* Modal de Éxito de Creación de Alumno */}
+      {successModal.show && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 text-white text-center">
+              <div className="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle size={32} />
+              </div>
+              <h3 className="text-xl font-bold">¡Estudiante Creado!</h3>
+              <p className="opacity-90">{successModal.name}</p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-600 text-center">
+                Se ha generado la billetera Stellar. Guarda las claves en un lugar seguro ahora mismo.
+              </p>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Clave Pública (Public Key)</p>
+                <code className="block bg-white px-2 py-1.5 rounded border border-gray-200 text-xs break-all font-mono">
+                  {successModal.publicKey}
+                </code>
+              </div>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Clave Secreta (Secret Key)</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-white px-2 py-1.5 rounded border border-gray-200 text-xs break-all font-mono">
+                    {showSecret ? successModal.secretKey : '*******************************************************'}
+                  </code>
+                  <div className="flex gap-1">
                     <button
-                      onClick={() => setSuccessModal({ ...successModal, show: false })}
-                      className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all"
+                      onClick={() => setShowSecret(!showSecret)}
+                      className="p-2 hover:bg-gray-200 rounded-lg transition-colors text-gray-500"
+                      title="Mostrar/Ocultar"
                     >
-                      He guardado la clave
+                      {showSecret ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                    <button
+                      onClick={() => handleCopy(successModal.secretKey)}
+                      className="p-2 hover:bg-gray-200 rounded-lg transition-colors text-gray-500"
+                      title="Copiar"
+                    >
+                      {copied ? <Check size={18} className="text-green-600" /> : <Copy size={18} />}
                     </button>
                   </div>
                 </div>
               </div>
-            )}
-                {/* Modal de Carga */}
-                {isCreating && (
-                  <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-[110]">
-                    <div className="bg-white p-8 rounded-2xl shadow-xl flex flex-col items-center gap-4">
-                      <Hourglass className="w-12 h-12 text-indigo-600 animate-spin" />
-                      <div className="text-center">
-                        <h3 className="font-bold text-gray-800">Creación en proceso</h3>
-                        <p className="text-sm text-gray-500">Configurando perfil y billetera Stellar...</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-3 items-start text-amber-800">
+                <ShieldCheck size={20} className="shrink-0 mt-0.5" />
+                <p className="text-xs">
+                  Si pierdes esta clave, el alumno no podrá acceder a sus tokens o logros. No se puede recuperar.
+                </p>
               </div>
-            );
-          }
-          
+
+              <button
+                onClick={() => setSuccessModal({ ...successModal, show: false })}
+                className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all"
+              >
+                He guardado la clave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal de Carga */}
+      {isCreating && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-[110]">
+          <div className="bg-white p-8 rounded-2xl shadow-xl flex flex-col items-center gap-4">
+            <Hourglass className="w-12 h-12 text-indigo-600 animate-spin" />
+            <div className="text-center">
+              <h3 className="font-bold text-gray-800">Creación en proceso</h3>
+              <p className="text-sm text-gray-500">Configurando perfil y billetera Stellar...</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

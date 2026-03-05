@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, CheckCircle, XCircle, FileText, AlertTriangle } from 'lucide-react';
 import type { NFTRequest } from '../../types';
+import { supabase } from '../../lib/supabaseClient';
 
 interface ValidationInterfaceProps {
   request: NFTRequest;
@@ -23,8 +24,8 @@ export function ValidationInterface({ request, onApprove, onReject, onClose }: V
       const amount = amountMatch ? amountMatch[1] : "10"; // Fallback a 10 si no se encuentra
 
       const { data, error } = await supabase.functions.invoke('send-e4c-tokens', {
-        body: { 
-          studentId: request.studentId, 
+        body: {
+          studentId: request.studentId,
           amount: amount,
           requestId: request.id
         },
@@ -178,11 +179,10 @@ export function ValidationInterface({ request, onApprove, onReject, onClose }: V
               <button
                 onClick={handleApprove}
                 disabled={isValidating}
-                className={`flex-1 py-3 rounded-lg transition-all flex items-center justify-center gap-2 ${
-                  isValidating
+                className={`flex-1 py-3 rounded-lg transition-all flex items-center justify-center gap-2 ${isValidating
                     ? 'bg-green-400 cursor-not-allowed'
                     : 'bg-green-600 hover:bg-green-700 shadow-lg hover:shadow-xl'
-                } text-white`}
+                  } text-white`}
               >
                 {isValidating ? (
                   <>
@@ -211,11 +211,10 @@ export function ValidationInterface({ request, onApprove, onReject, onClose }: V
               <button
                 onClick={handleReject}
                 disabled={!rejectionReason.trim()}
-                className={`flex-1 py-3 rounded-lg transition-colors ${
-                  rejectionReason.trim()
+                className={`flex-1 py-3 rounded-lg transition-colors ${rejectionReason.trim()
                     ? 'bg-red-600 hover:bg-red-700 text-white'
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 Confirmar Rechazo
               </button>

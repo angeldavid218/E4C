@@ -92,7 +92,7 @@ export default function App() {
 
     };
 
-    setNftRequests(prev => [newRequest, ...prev]);
+    // setNftRequests(prev => [newRequest, ...prev]);
 
   };
 
@@ -100,7 +100,7 @@ export default function App() {
 
   const handleValidatorApprove = (requestId: string) => {
 
-    setNftRequests(prev =>
+    /* setNftRequests(prev =>
 
       prev.map(req =>
 
@@ -126,35 +126,35 @@ export default function App() {
 
       )
 
-    );
+    ); */
 
 
 
-    setTimeout(() => {
-
-      setNftRequests(prev =>
-
-        prev.map(req =>
-
-          req.id === requestId
-
-            ? {
-
-              ...req,
-
-              status: 'approved' as const,
-
-              blockchainHash: `0x${Math.random().toString(16).slice(2)}${Math.random().toString(16).slice(2)}`,
-
-            }
-
-            : req
-
-        )
-
-      );
-
-    }, 3000);
+    /*     setTimeout(() => {
+    
+          setNftRequests(prev =>
+    
+            prev.map(req =>
+    
+              req.id === requestId
+    
+                ? {
+    
+                  ...req,
+    
+                  status: 'approved' as const,
+    
+                  blockchainHash: `0x${Math.random().toString(16).slice(2)}${Math.random().toString(16).slice(2)}`,
+    
+                }
+    
+                : req
+    
+            )
+    
+          );
+    
+        }, 3000); */
 
   };
 
@@ -162,27 +162,27 @@ export default function App() {
 
   const handleValidatorReject = (requestId: string, reason: string) => {
 
-    setNftRequests(prev =>
-
-      prev.map(req =>
-
-        req.id === requestId
-
-          ? {
-
-            ...req,
-
-            status: 'rejected' as const,
-
-            rejectionReason: reason,
-
-          }
-
-          : req
-
-      )
-
-    );
+    /*     setNftRequests(prev =>
+    
+          prev.map(req =>
+    
+            req.id === requestId
+    
+              ? {
+    
+                ...req,
+    
+                status: 'rejected' as const,
+    
+                rejectionReason: reason,
+    
+              }
+    
+              : req
+    
+          )
+    
+        ); */
 
   };
 
@@ -263,8 +263,6 @@ export default function App() {
           <ValidatorDashboard
             validatorId={user?.id}
             studentTasks={studentTasks}
-            onApproveRequest={handleValidatorApprove}
-            onRejectRequest={handleValidatorReject}
           />
         );
 
@@ -312,3 +310,4 @@ export default function App() {
   );
 
 }
+

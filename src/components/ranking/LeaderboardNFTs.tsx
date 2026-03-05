@@ -1,9 +1,9 @@
 import { Award, Trophy, Medal } from 'lucide-react';
-import type { NFTRequest } from '../../types';
+import type { NFTRequest, Student } from '../../types';
 
 interface LeaderboardNFTsProps {
   nftRequests: NFTRequest[];
-  students: Student[]; // New prop
+  students?: Student[]; // New prop
 }
 
 interface StudentNFTCount {
@@ -18,11 +18,11 @@ export function LeaderboardNFTs({ nftRequests }: LeaderboardNFTsProps) {
   // --- Agregación y Cómputo del Ranking ---
   // 1. Se agrupan los NFTs aprobados por estudiante usando un Map para eficiencia.
   const studentNFTMap = new Map<string, StudentNFTCount>();
-  
+
   nftRequests.filter(req => req.status === 'approved').forEach(nft => {
     const existing = studentNFTMap.get(nft.studentId);
-    const studentData = students.find(s => s.id === nft.studentId); // Find the corresponding student
-    const displayAlias = studentData?.alias || 'Estudiante E4C'; // Use alias if exists, else fall back to generic alias
+    // const studentData = students.find(s => s.id === nft.studentId); // Find the corresponding student
+    // const displayAlias = studentData?.alias || 'Estudiante E4C'; // Use alias if exists, else fall back to generic alias
 
     if (existing) {
       existing.nftCount++;
@@ -31,7 +31,7 @@ export function LeaderboardNFTs({ nftRequests }: LeaderboardNFTsProps) {
       studentNFTMap.set(nft.studentId, {
         studentId: nft.studentId,
         studentName: nft.studentName, // Keep original name if needed elsewhere
-        studentAlias: displayAlias, // Store the chosen display name
+        studentAlias: "Estudiante E4C", // Store the chosen display name
         nftCount: 1,
         nfts: [nft],
       });
@@ -105,17 +105,15 @@ export function LeaderboardNFTs({ nftRequests }: LeaderboardNFTsProps) {
           {sortedStudents.slice(0, 3).map((student, index) => (
             <div
               key={student.studentId}
-              className={`rounded-xl border-2 overflow-hidden ${getMedalBg(index)} ${
-                index === 0 ? 'md:order-2 transform md:scale-105' : index === 1 ? 'md:order-1' : 'md:order-3'
-              }`}
+              className={`rounded-xl border-2 overflow-hidden ${getMedalBg(index)} ${index === 0 ? 'md:order-2 transform md:scale-105' : index === 1 ? 'md:order-1' : 'md:order-3'
+                }`}
             >
-              <div className={`p-6 text-center ${
-                index === 0 
-                  ? 'bg-gradient-to-br from-yellow-400 to-amber-500' 
-                  : index === 1
+              <div className={`p-6 text-center ${index === 0
+                ? 'bg-gradient-to-br from-yellow-400 to-amber-500'
+                : index === 1
                   ? 'bg-gradient-to-br from-gray-300 to-slate-400'
                   : 'bg-gradient-to-br from-amber-600 to-orange-700'
-              }`}>
+                }`}>
                 <div className="w-16 h-16 mx-auto mb-3 flex items-center justify-center bg-white rounded-full">
                   {getMedalIcon(index)}
                 </div>

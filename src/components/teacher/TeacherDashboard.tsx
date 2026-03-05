@@ -10,13 +10,13 @@ import type { NFTRequest, Teacher } from '../../types';
 
 interface TeacherDashboardProps {
   teacherId?: string;
-  nftRequests: NFTRequest[];
+  nftRequests?: NFTRequest[];
   onCreateNFTRequest: (request: any) => void;
 }
 
 type TabView = 'assign-tasks' | 'review-tasks' | 'nft-request' | 'history';
 
-export function TeacherDashboard({ teacherId, nftRequests, onCreateNFTRequest }: TeacherDashboardProps) {
+export function TeacherDashboard({ teacherId, onCreateNFTRequest }: TeacherDashboardProps) {
   const { allTeachers, switchUserRole } = useAuth();
   const [activeTab, setActiveTab] = useState<TabView>('assign-tasks');
   const [teacherData, setTeacherData] = useState<Teacher | null>(null);
@@ -104,9 +104,8 @@ export function TeacherDashboard({ teacherId, nftRequests, onCreateNFTRequest }:
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg transition-all whitespace-nowrap ${
-              activeTab === tab.id ? `bg-${tab.color}-100 text-${tab.color}-700 font-bold` : 'text-gray-600 hover:bg-gray-50'
-            }`}
+            className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg transition-all whitespace-nowrap ${activeTab === tab.id ? `bg-${tab.color}-100 text-${tab.color}-700 font-bold` : 'text-gray-600 hover:bg-gray-50'
+              }`}
           >
             <tab.icon className="w-5 h-5" />
             <span>{tab.label}</span>

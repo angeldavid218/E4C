@@ -27,7 +27,7 @@ export function LoginSignupForm() {
         await signUp(email, password);
       }
     } catch (err: unknown) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
