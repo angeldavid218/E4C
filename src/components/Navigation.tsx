@@ -16,7 +16,7 @@ export function Navigation({ children }: NavigationProps) {
   const currentSelectedTeacherId = userRole === 'teacher' ? user?.id : '';
 
   const roles: { id: UserRole; label: string, icon: React.ComponentType<{ className?: string }> }[] = [
-
+    { id: 'admin', label: 'Admin', icon: User }, // Added Admin Role
     { id: 'teacher', label: 'Docente', icon: BookText },
     { id: 'validator', label: 'Validador', icon: Fingerprint },
     { id: 'student', label: 'Estudiante', icon: User },
