@@ -56,6 +56,17 @@ export function SubmissionHistory({ teacherId }: SubmissionHistoryProps) {
                           item.task?.title.toLowerCase().includes(searchTerm.toLowerCase());
       const matchStatus = filterStatus === 'all' ? true : item.status === filterStatus;
       return matchSearch && matchStatus;
+    }).sort((a, b) => {
+      const studentNameA = a.student?.name || '';
+      const studentNameB = b.student?.name || '';
+      const taskTitleA = a.task?.title || '';
+      const taskTitleB = b.task?.title || '';
+
+      const studentNameCompare = studentNameA.localeCompare(studentNameB);
+      if (studentNameCompare !== 0) {
+        return studentNameCompare;
+      }
+      return taskTitleA.localeCompare(taskTitleB);
     });
   }, [history, searchTerm, filterStatus]);
 

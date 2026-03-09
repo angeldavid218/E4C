@@ -47,6 +47,14 @@ export function MyTasks({ studentId }: MyTasksProps) {
         tasksData.forEach(task => detailsMap.set(task.id, task as Task));
         setTasksDetails(detailsMap);
 
+        // Sort studentTasks by task title
+        const sortedStudentTasks = (studentTasksData || []).sort((a, b) => {
+          const titleA = detailsMap.get(a.task_id)?.title || '';
+          const titleB = detailsMap.get(b.task_id)?.title || '';
+          return titleA.localeCompare(titleB);
+        });
+        setStudentTasks(sortedStudentTasks);
+
       } catch (err: unknown) {
         console.error('Error fetching student tasks:', err);
         setError('Error al cargar tus tareas.');

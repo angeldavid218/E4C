@@ -38,14 +38,18 @@ export function TeacherManagement({ teachers, onCreateTeacher }: TeacherManageme
 
 
 
-  const filteredTeachers = (teachers || []).filter(teacher =>
-    teacher.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    teacher.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    teacher.subjects.join(', ').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (teacher.curso && teacher.curso.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (teacher.division && teacher.division.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (teacher.escuela && teacher.escuela.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredTeachers = (teachers || [])
+    .filter(teacher =>
+      teacher.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      teacher.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      teacher.subjects.join(', ').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (teacher.curso && teacher.curso.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (teacher.division && teacher.division.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (teacher.escuela && teacher.escuela.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const handleCreateTeacher = async () => {
     if (newTeacherName && newTeacherEmail && newTeacherSubjects.length > 0 && newTeacherCurso && newTeacherDivision && newTeacherEscuela) {

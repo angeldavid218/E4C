@@ -127,7 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (studentsError) {
       console.error('Error fetching students:', studentsError);
     } else {
-      setAllStudents(studentsData as Student[]);
+      setAllStudents((studentsData as Student[]).sort((a, b) => a.name.localeCompare(b.name)));
       currentStudents = studentsData as Student[];
     }
 
@@ -135,21 +135,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (teachersError) {
       console.error('Error fetching teachers:', teachersError.message || teachersError);
     } else {
-      setAllTeachers(teachersData as Teacher[]);
+      setAllTeachers((teachersData as Teacher[]).sort((a, b) => a.name.localeCompare(b.name)));
     }
     
     const { data: adminsData, error: adminsError } = await supabase.from('admins').select('*');
     if (adminsError) {
       console.error('Error fetching admins:', adminsError.message || adminsError);
     } else {
-      setAllAdmins(adminsData as Admin[]);
+      setAllAdmins((adminsData as Admin[]).sort((a, b) => a.name.localeCompare(b.name)));
     }
     
     const { data: validatorsData, error: validatorsError } = await supabase.from('validators').select('*');
     if (validatorsError) {
       console.error('Error fetching validators:', validatorsError);
     } else {
-      setAllValidators(validatorsData as Validator[]);
+      setAllValidators((validatorsData as Validator[]).sort((a, b) => a.name.localeCompare(b.name)));
     }
     return { currentStudents, adminsData: adminsData || [], teachersData: teachersData || [], validatorsData: validatorsData || [] };
   }, []);

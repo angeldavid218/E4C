@@ -24,7 +24,7 @@ export function Marketplace({ studentId }: MarketplaceProps) {
     { id: 'reward-1', name: 'Entrada 2D - Cine', description: 'Válido para cualquier función de lunes a jueves en salas seleccionadas.', cost: 100, category: 'Cine', image: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=800&q=80', available: 10 },
     { id: 'reward-2', name: 'Obra: "El Método"', description: 'Pase para 1 persona en el Teatro San Martín. Funciones de fin de semana.', cost: 250, category: 'Teatro', image: 'https://images.unsplash.com/photo-1503095396549-80705bc06179?auto=format&fit=crop&w=800&q=80', available: 5 },
     { id: 'reward-3', name: 'Membresía MALBA', description: 'Acceso ilimitado por 1 mes y catálogo digital de exposiciones.', cost: 400, category: 'Museos', image: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80', available: 3 },
-  ];
+  ].sort((a, b) => a.name.localeCompare(b.name));
 
   const [rewards, setRewards] = useState<Reward[]>(initialRewards);
   const [filterCategory, setFilterCategory] = useState<string>('Todos');

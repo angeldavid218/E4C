@@ -24,6 +24,17 @@ export function ValidationCenter({ requests, onApprove, onReject }: ValidationCe
     if (filter === 'validated') return req.status === 'approved';
     if (filter === 'rejected') return req.status === 'rejected';
     return true;
+  }).sort((a, b) => {
+    const studentNameA = a.studentName || '';
+    const studentNameB = b.studentName || '';
+    const achievementNameA = a.achievementName || '';
+    const achievementNameB = b.achievementName || '';
+
+    const studentNameCompare = studentNameA.localeCompare(studentNameB);
+    if (studentNameCompare !== 0) {
+      return studentNameCompare;
+    }
+    return achievementNameA.localeCompare(achievementNameB);
   });
 
   // --- Función Auxiliar para la Insignia de Estado ---

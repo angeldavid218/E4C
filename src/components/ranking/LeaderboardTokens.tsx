@@ -11,7 +11,13 @@ export function LeaderboardTokens({ students }: LeaderboardTokensProps) {
   }
 
   // Ordena a los estudiantes en orden descendente según su cantidad de tokens.
-  const sortedStudents = [...students].sort((a, b) => b.tokens - a.tokens);
+  const sortedStudents = [...students].sort((a, b) => {
+    if (a.tokens === b.tokens) {
+      // Secondary sort by alias if token counts are equal
+      return (a.alias || '').localeCompare(b.alias || '');
+    }
+    return b.tokens - a.tokens;
+  });
 
   // --- Funciones Auxiliares de UI ---
   // Devuelve un icono de medalla o número según la posición en el ranking.

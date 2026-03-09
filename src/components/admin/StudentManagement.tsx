@@ -60,7 +60,7 @@ export function StudentManagement({ onSelectStudent, students: propsStudents }: 
     (student.curso && student.curso.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (student.division && student.division.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (student.escuela && student.escuela.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  ).sort((a, b) => a.name.localeCompare(b.name));
 
   // **Operación Stellar: Creación y Fondeo de Wallet de Estudiante**
   // Esta función maneja la creación de una nueva cuenta Stellar para un estudiante,

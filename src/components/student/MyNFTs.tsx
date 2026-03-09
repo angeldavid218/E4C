@@ -54,7 +54,7 @@ export function MyNFTs({ nfts }: MyNFTsProps) {
             {/* Mapea sobre el array de NFTs para mostrar cada uno como una tarjeta clickable.
                 Al hacer clic, se selecciona el NFT para mostrar sus detalles en un modal. */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {nfts.map(nft => (
+              {[...nfts].sort((a, b) => a.achievementName.localeCompare(b.achievementName)).map(nft => (
                 <button
                   key={nft.id}
                   onClick={() => setSelectedNFT(nft)}

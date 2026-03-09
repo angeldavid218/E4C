@@ -69,7 +69,8 @@ export function MyTokens({ studentId }: MyTokensProps) {
           description: p.to === publicKey ? 'Tokens recibidos' : 'Tokens enviados/canjeados',
           date: p.created_at,
           from: p.from
-        }));
+        }))
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
       setTransactions(formattedTrans);
 

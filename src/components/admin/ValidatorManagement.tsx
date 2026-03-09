@@ -15,7 +15,7 @@ const schoolOptions = [
   { value: "Colegio N° 5 \"Bartolomé Mitre\"", label: "Colegio N° 5 \"Bartolomé Mitre\"" },
   { value: "Colegio N° 6 \"Manuel Belgrano\"", label: "Colegio N° 6 \"Manuel Belgrano\"" },
   { value: "Colegio N° 7 \"Juan Martín de Pueyrredón\"", label: "Colegio N° 7 \"Juan Martín de Pueyrredón\"" },
-];
+].sort((a, b) => a.label.localeCompare(b.label));
 
 interface ValidatorManagementProps {
   validators: Validator[];
@@ -27,6 +27,10 @@ export function ValidatorManagement({ validators, onCreateValidator }: Validator
   const [newEmail, setNewEmail] = useState('');
   const [selectedSchools, setSelectedSchools] = useState<any[]>([]);
   const [selectedValidator, setSelectedValidator] = useState<Validator | null>(null);
+
+  const sortedValidators = useMemo(() => {
+    return [...validators].sort((a, b) => a.name.localeCompare(b.name));
+  }, [validators]);
 
   const handleCreate = async () => {
     if (newName && newEmail && selectedSchools.length > 0) {

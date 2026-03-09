@@ -83,10 +83,16 @@ export function TaskReview({ teacherId, onTasksReviewed }: TaskReviewProps) {
         return matchEscuela && matchCurso && matchSearch;
       })
       .sort((a, b) => {
-        // Ordenar por Escuela, luego por Curso
-        const escComp = (a.student?.escuela || '').localeCompare(b.student?.escuela || '');
-        if (escComp !== 0) return escComp;
-        return (a.student?.curso || '').localeCompare(b.student?.curso || '');
+        const studentNameA = a.student?.name || '';
+        const studentNameB = b.student?.name || '';
+        const taskTitleA = a.task?.title || '';
+        const taskTitleB = b.task?.title || '';
+
+        const studentNameCompare = studentNameA.localeCompare(studentNameB);
+        if (studentNameCompare !== 0) {
+          return studentNameCompare;
+        }
+        return taskTitleA.localeCompare(taskTitleB);
       });
   }, [studentTasksToReview, tasksDetails, studentsDetails, filterEscuela, filterCurso, searchTerm]);
 

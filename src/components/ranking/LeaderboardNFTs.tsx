@@ -39,7 +39,12 @@ export function LeaderboardNFTs({ nftRequests }: LeaderboardNFTsProps) {
   });
 
   // 2. Se convierte el Map a un array y se ordena para crear el ranking.
-  const sortedStudents = Array.from(studentNFTMap.values()).sort((a, b) => b.nftCount - a.nftCount);
+  const sortedStudents = Array.from(studentNFTMap.values()).sort((a, b) => {
+    if (a.nftCount === b.nftCount) {
+      return a.studentAlias.localeCompare(b.studentAlias);
+    }
+    return b.nftCount - a.nftCount;
+  });
 
   // --- Funciones Auxiliares de UI ---
   // Estas funciones ayudan a mantener el JSX limpio y legible.
