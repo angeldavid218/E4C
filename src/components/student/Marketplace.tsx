@@ -25,6 +25,44 @@ export function Marketplace({ studentId }: MarketplaceProps) {
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [categories, setCategories] = useState<string[]>([]);
 
+  const fetchStellarBalance = useCallback(async () => {
+    if (!studentId) {
+      setE4cBalance('0');
+      return;
+    }
+
+    try {
+      const { data: student, error: studentError } = await supabase
+        .from('students')
+        .select('stellar_public_key')
+        .eq('id', studentId)
+        .single();
+
+      if (studentError || !student?.stellar_public_key) {
+        throw new Error("No se encontró la clave pública Stellar del estudiante.");
+      }
+
+      const publicKey = student.stellar_public_key;
+      const server = new StellarSdk.Horizon.Server('https://horizon-testnet.stellar.org');
+      const account = await server.accounts().accountId(publicKey).call();
+      
+      const { data: issuerWallet } = await supabase
+        .from('stellar_wallets')
+        .select('public_key')
+        .eq('role', 'issuer')
+        .limit(1)
+        .single();
+
+      const e4c = account.balances.find(
+        (b: any) => b.asset_code === 'E4C' && b.asset_issuer === issuerWallet?.public_key
+      );
+      setE4cBalance(e4c ? e4c.balance : '0');
+    } catch (err: any) {
+      console.error("Error fetching Stellar balance:", err.message);
+      setE4cBalance('0');
+    }
+  }, [studentId]);
+
   const fetchRewards = useCallback(async () => {
     setLoadingRewards(true);
     try {
