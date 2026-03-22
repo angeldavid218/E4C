@@ -1,4 +1,4 @@
-import { createClient } from "supabase"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -155,13 +155,26 @@ Deno.serve(async (req) => {
     // --- PASO 6: PERSISTENCIA EN BASE DE DATOS ---
     // Guardamos las llaves en stellar_wallets. 
     // NOTA: En producción, las secret_keys deberían ir a un Vault encriptado.
-    await supabaseClient.from('stellar_wallets').insert([
+    const { error: insertError } = await supabaseClient.from('stellar_wallets').insert([
       { admin_id: adminId, role: 'issuer', public_key: issuer.publicKey(), secret_key: issuer.secret() },
       { admin_id: adminId, role: 'distributor', public_key: distributor.publicKey(), secret_key: distributor.secret() }
     ]);
 
+    if (insertError) {
+      console.error("Error al insertar en stellar_wallets:", insertError.message);
+      throw new Error(`Error al guardar las cuentas en la base de datos: ${insertError.message}`);
+    }
+
+    console.log("Cuentas Issuer y Distributor creadas y guardadas con éxito.");
+
     return new Response(
-      JSON.stringify({ success: true, issuer: issuer.publicKey(), distributor: distributor.publicKey() }),
+      JSON.stringify({ 
+        success: true, 
+        issuerPublicKey: issuer.publicKey(), 
+        issuerSecretKey: issuer.secret(),
+        distributorPublicKey: distributor.publicKey(),
+        distributorSecretKey: distributor.secret()
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
 

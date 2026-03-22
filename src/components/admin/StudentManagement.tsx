@@ -132,7 +132,7 @@ export function StudentManagement({ onSelectStudent, students: propsStudents }: 
         // Limpiar campos...
       } catch (err: unknown) {
         console.error("Fallo total al crear estudiante y wallet Stellar:", err);
-        alert(`Error al crear estudiante: ${err.message}`);
+        alert(`Error al crear estudiante: ${err instanceof Error ? err.message : String(err)}`);
       } finally {
         setIsCreating(false);
       }
@@ -276,7 +276,7 @@ export function StudentManagement({ onSelectStudent, students: propsStudents }: 
                 <p><strong>Curso:</strong> {selectedStudent.curso}° "{selectedStudent.division}"</p>
                 <p><strong>Escuela:</strong> {selectedStudent.escuela}</p>
                 <p><strong>Tokens:</strong> {selectedStudent.tokens}</p>
-                <p><strong>Tareas Completadas:</strong> {selectedStudent.tasksCompleted}</p>
+                <p><strong>Tareas Completadas:</strong> {selectedStudent.tasks_completed}</p>
                 <p><strong>Public Key Stellar:</strong> {selectedStudent.stellar_public_key}</p>
                 <button
                   onClick={() => setSelectedStudent(null)}

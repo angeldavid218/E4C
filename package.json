@@ -10,15 +10,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@babel/runtime": "^7.0.0",
+    "@google/generative-ai": "^0.24.1",
+    "@stellar/freighter-api": "^1.7.0",
     "@stellar/stellar-sdk": "^14.5.0",
     "@supabase/supabase-js": "^2.95.3",
+    "buffer": "^6.0.3",
     "lucide-react": "^0.303.0",
     "qrcode.react": "^4.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-select": "^5.10.2",
-    "recharts": "^2.10.3",
-    "@babel/runtime": "^7.0.0"
+    "recharts": "^2.10.3"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",

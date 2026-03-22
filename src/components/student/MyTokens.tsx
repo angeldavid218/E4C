@@ -65,7 +65,7 @@ export function MyTokens({ studentId }: MyTokensProps) {
         .map((p: any) => ({
           id: p.id,
           amount: p.amount,
-          type: p.to === publicKey ? 'earn' : 'spend',
+          type: (p.to === publicKey ? 'earn' : 'spend') as 'earn' | 'spend',
           description: p.to === publicKey ? 'Tokens recibidos' : 'Tokens enviados/canjeados',
           date: p.created_at,
           from: p.from

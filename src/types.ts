@@ -1,57 +1,52 @@
 // src/types.ts
 
-export interface Student {
+export type UserRole = 'student' | 'teacher' | 'admin' | 'validator' | 'ranking' | 'unauthenticated' | 'unapproved';
+
+export interface Profile {
   id: string;
-  name: string;
   email: string;
-  enrollmentDate: string;
-  tokens: number;
-  tasksCompleted: number;
-  nfts: string[]; // Array de IDs de NFT
-  grade: string; // Añadido de datos simulados
+  name: string;
+  role: UserRole;
   stellar_public_key?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  
+  // Shared
+  escuela?: string;
   curso?: string;
   division?: string;
-  escuela?: string;
-  alias?: string; // Nuevo: Alias opcional para visualización pública
+  
+  // Student Specific
+  tokens?: number;
+  tasks_completed?: number;
+  nfts?: string[];
+  grade?: string;
+  alias?: string;
+  enrollment_date?: string;
+
+  // Teacher Specific
+  subjects?: string[];
+
+  // Validator Specific
+  escuelas?: string[];
+  
+  created_at?: string;
 }
 
-export interface Teacher {
-  id: string;
-  name: string;
-  email: string;
-  subjects: string[]; // Añadido de datos simulados
-  curso?: string;
-  division?: string;
-  escuela?: string;
-  stellar_public_key?: string;
-}
-
-export interface Admin {
-  id: string;
-  name: string;
-  email: string;
-  stellar_public_key?: string;
-  created_at: string;
-}
-
-export interface Validator {
-  id: string;
-  name: string;
-  email: string;
-  escuelas: string[]; // Lista de escuelas asignadas
-  stellar_public_key?: string;
-  created_at: string;
-}
+// Aliases para compatibilidad hacia atrás durante la refactorización
+export type Student = Profile & { role: 'student' };
+export type Teacher = Profile & { role: 'teacher' };
+export type Admin = Profile & { role: 'admin' };
+export type Validator = Profile & { role: 'validator' };
 
 export interface Task {
   id: string;
   title: string;
   subject: string;
-  description: string; // Descripción añadida
-  duedate: string;
+  description: string;
+  due_date?: string;
   points: number;
-  status: 'pending' | 'completed';
+  teacher_id: string;
+  created_at?: string;
 }
 
 export interface StudentTask {
@@ -62,6 +57,46 @@ export interface StudentTask {
   assigned_date: string;
   completed_date?: string;
   grade?: number;
+  evidence_url?: string;
+  feedback?: string;
+  
+  // Joins opcionales para el frontend
+  task?: Task;
+  student?: Profile;
+}
+
+export interface Partner {
+  id: string;
+  name: string;
+  description?: string;
+  contact_email?: string;
+  created_at?: string;
+}
+
+export interface Reward {
+  id: string;
+  partner_id?: string;
+  partner?: Partner;
+  title: string;
+  description: string;
+  category?: string;
+  cost_e4c: number;
+  image_url?: string;  is_featured: boolean;
+  featured_until?: string;
+  stock?: number;
+  created_at?: string;
+}
+
+export interface Redeem {
+  id: string;
+  student_id: string;
+  reward_id: string;
+  status: string;
+  redeemed_at: string;
+  blockchain_hash?: string;
+  
+  // Joins
+  reward?: Reward;
 }
 
 export interface NFT {
@@ -76,27 +111,6 @@ export interface NFT {
     admin: string;
     timestamp: string;
   };
-}
-
-export interface Partner {
-  id: string;
-  name: string;
-  description?: string;
-  contact_email?: string;
-  created_at?: string;
-}
-
-export interface Reward {
-  id: string;
-  partner_id?: string;
-  partner?: Partner; // Optional: Joined partner data
-  title: string;
-  description: string;
-  cost_e4c: number;
-  image_url?: string;
-  is_featured: boolean;
-  featured_until?: string;
-  created_at?: string;
 }
 
 export interface AchievementTemplate {
@@ -122,8 +136,6 @@ export interface TokenTransaction {
   teacherId?: string;
   teacherName?: string;
 }
-
-export type UserRole = 'student' | 'teacher' | 'admin' | 'validator' | 'ranking' | 'unauthenticated' | 'unapproved';
 
 export interface NFTRequest {
   id: string;

@@ -16,7 +16,7 @@ export function LeaderboardTokens({ students }: LeaderboardTokensProps) {
       // Secondary sort by alias if token counts are equal
       return (a.alias || '').localeCompare(b.alias || '');
     }
-    return b.tokens - a.tokens;
+    return (b.tokens || 0) - (a.tokens || 0);
   });
 
   // --- Funciones Auxiliares de UI ---

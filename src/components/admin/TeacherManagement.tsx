@@ -107,7 +107,7 @@ export function TeacherManagement({ teachers, onCreateTeacher }: TeacherManageme
     .filter(teacher =>
       teacher.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       teacher.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      teacher.subjects.join(', ').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (teacher.subjects || []).join(', ').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (teacher.curso && teacher.curso.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (teacher.division && teacher.division.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (teacher.escuela && teacher.escuela.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -126,7 +126,12 @@ export function TeacherManagement({ teachers, onCreateTeacher }: TeacherManageme
           escuela: newTeacherEscuela,
           // stellar_public_key es manejado por el onCreateTeacher del padre
         };
-        await onCreateTeacher(newTeacherData);
+        const fullTeacherData: Omit<Teacher, 'id' | 'stellar_public_key'> = {
+          ...newTeacherData,
+          role: 'teacher',
+          status: 'approved'
+        };
+        await onCreateTeacher(fullTeacherData);
 
         setNewTeacherName('');
         setNewTeacherEmail('');
@@ -134,7 +139,7 @@ export function TeacherManagement({ teachers, onCreateTeacher }: TeacherManageme
         setNewTeacherCurso('');
         setNewTeacherDivision('');
         setNewTeacherEscuela('');
-      } catch (err: unknown) {
+      } catch (err: any) {
         console.error('Fallo total:', err);
         alert(`Error al crear: ${err.message}`);
       }
@@ -286,7 +291,7 @@ export function TeacherManagement({ teachers, onCreateTeacher }: TeacherManageme
           <p><strong>ID:</strong> {selectedTeacher.id}</p>
           <p><strong>Nombre:</strong> {selectedTeacher.name}</p>
           <p><strong>Email:</strong> {selectedTeacher.email}</p>
-          <p><strong>Materias:</strong> {selectedTeacher.subjects.join(', ')}</p>
+          <p><strong>Materias:</strong> {selectedTeacher.subjects?.join(', ') || 'Ninguna'}</p>
           <p><strong>Curso:</strong> {selectedTeacher.curso}° "{selectedTeacher.division}"</p>
           <p><strong>Escuela:</strong> {selectedTeacher.escuela}</p>
           <p><strong>Public Key Stellar:</strong> {selectedTeacher.stellar_public_key}</p>

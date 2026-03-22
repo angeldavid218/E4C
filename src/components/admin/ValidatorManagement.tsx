@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Search, ShieldCheck } from 'lucide-react';
 import type { Validator } from '../../types';
 import Select from 'react-select';

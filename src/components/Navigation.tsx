@@ -12,30 +12,18 @@ interface NavigationProps {
 export function Navigation({ children }: NavigationProps) {
   const { user, switchUserRole, signOut, allStudents, allTeachers, allValidators } = useAuth();
   const userRole = user?.user_metadata.role as UserRole || 'unauthenticated';
-  const currentSelectedStudentId = userRole === 'student' ? user?.id : '';
-  const currentSelectedTeacherId = userRole === 'teacher' ? user?.id : '';
+  const isPending = user?.user_metadata?.status === 'pending';
 
   const roles: { id: UserRole; label: string, icon: React.ComponentType<{ className?: string }> }[] = [
-    { id: 'admin', label: 'Admin', icon: User }, // Rol de Administrador Añadido
+    { id: 'admin', label: 'Admin', icon: User },
     { id: 'teacher', label: 'Docente', icon: BookText },
     { id: 'validator', label: 'Validador', icon: Fingerprint },
     { id: 'student', label: 'Estudiante', icon: User },
     { id: 'ranking', label: 'Ranking', icon: Trophy },
   ];
 
-  const handleRoleChange = (role: UserRole) => {
-    switchUserRole(role);
-  };
-
-  const handleStudentChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedId = event.target.value;
-    switchUserRole('student', selectedId);
-  };
-
-  const handleTeacherChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedId = event.target.value;
-    switchUserRole('teacher', selectedId);
-  };
+  // Si está pendiente, solo mostrar el botón de Ranking
+  const visibleRoles = isPending ? roles.filter(r => r.id === 'ranking') : roles;
 
   return (
     <nav className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
@@ -46,8 +34,8 @@ export function Navigation({ children }: NavigationProps) {
               E4C
             </h1>
             
-            {/* Selector de Estudiante */}
-            {allStudents.length > 0 && userRole === 'student' && (
+            {/* Selector de Estudiante - Ocultar si está pendiente */}
+            {!isPending && allStudents.length > 0 && userRole === 'student' && (
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Alumno:</span>
                 <select
@@ -63,8 +51,8 @@ export function Navigation({ children }: NavigationProps) {
               </div>
             )}
 
-            {/* Selector de Docente */}
-            {allTeachers.length > 0 && userRole === 'teacher' && (
+            {/* Selector de Docente - Ocultar si está pendiente */}
+            {!isPending && allTeachers.length > 0 && userRole === 'teacher' && (
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-purple-600 uppercase tracking-wider">Docente:</span>
                 <select
@@ -80,8 +68,8 @@ export function Navigation({ children }: NavigationProps) {
               </div>
             )}
 
-            {/* Selector de Validador */}
-            {allValidators && allValidators.length > 0 && userRole === 'validator' && (
+            {/* Selector de Validador - Ocultar si está pendiente */}
+            {!isPending && allValidators && allValidators.length > 0 && userRole === 'validator' && (
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-green-600 uppercase tracking-wider">Validador:</span>
                 <select
@@ -98,13 +86,14 @@ export function Navigation({ children }: NavigationProps) {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {roles.map(role => {
+            {visibleRoles.map(role => {
               const Icon = role.icon;
               const isActive = userRole === role.id;
               return (
                 <button
                   key={role.id}
-                  onClick={() => handleRoleChange(role.id)}
+                  onClick={() => !isPending && switchUserRole(role.id)}
+                  disabled={isPending && role.id !== 'ranking'}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
                     isActive
                       ? 'bg-indigo-600 text-white shadow-md'
@@ -123,7 +112,7 @@ export function Navigation({ children }: NavigationProps) {
               <LogOut className="w-4 h-4 text-gray-500" />
               <span>Cerrar Sesión</span>
             </button>
-            <AuthStatus /> {/* Componente AuthStatus */}
+            <AuthStatus />
           </div>
         </div>
       </div>

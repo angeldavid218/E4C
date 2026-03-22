@@ -1,5 +1,5 @@
 import { Award, Trophy, Medal } from 'lucide-react';
-import type { NFTRequest } from '../../types';
+import type { NFTRequest, Student } from '../../types';
 
 interface LeaderboardNFTsProps {
   nftRequests: NFTRequest[];
@@ -14,14 +14,14 @@ interface StudentNFTCount {
   nfts: NFTRequest[];
 }
 
-export function LeaderboardNFTs({ nftRequests }: LeaderboardNFTsProps) {
+export function LeaderboardNFTs({ nftRequests, students }: LeaderboardNFTsProps) {
   // --- Agregación y Cómputo del Ranking ---
   // 1. Se agrupan los NFTs aprobados por estudiante usando un Map para eficiencia.
   const studentNFTMap = new Map<string, StudentNFTCount>();
   
   nftRequests.filter(req => req.status === 'approved').forEach(nft => {
     const existing = studentNFTMap.get(nft.studentId);
-    const studentData = students.find(s => s.id === nft.studentId); // Encontrar el estudiante correspondiente
+    const studentData = students.find((s: Student) => s.id === nft.studentId); // Encontrar el estudiante correspondiente
     const displayAlias = studentData?.alias || 'Estudiante E4C'; // Usar alias si existe, de lo contrario usar alias genérico
 
     if (existing) {

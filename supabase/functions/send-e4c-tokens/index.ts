@@ -32,10 +32,29 @@ Deno.serve(async (req) => {
       Deno.env.get("SB_SERVICE_ROLE_KEY") ?? ""
     )
 
-    const { studentId, amount, studentTaskId } = await req.json();
+    const { studentId, amount, studentTaskId, validatorSignature } = await req.json();
     if (!studentId || !amount || !studentTaskId) throw new Error("Datos de transferencia incompletos");
 
     console.log(`Procesando pago de ${amount} E4C para Alumno ${studentId}`);
+
+    // --- PASO 0: VALIDACIÓN DE AUTORIZACIÓN BIOMÉTRICA (ACCOUNT ABSTRACTION) ---
+    if (!validatorSignature) {
+      throw new Error("Autorización biométrica requerida para liberar fondos institucionales.");
+    }
+
+    // Verificar que el Validador existe y tiene este Passkey registrado
+    const { data: validator, error: valError } = await supabaseClient
+      .from('validators')
+      .select('name, passkey_credential_id')
+      .eq('passkey_credential_id', validatorSignature.credentialId)
+      .maybeSingle();
+
+    if (valError || !validator) {
+      console.error("Fallo de validación de identidad:", valError);
+      throw new Error("La firma biométrica no coincide con ningún validador autorizado.");
+    }
+
+    console.log(`AUTORIZACIÓN SMART: Aprobado por Validador ${validator.name} vía biometría.`);
 
     // --- PASO 1: LOCALIZAR DESTINO ---
     const { data: student } = await supabaseClient
@@ -77,6 +96,7 @@ Deno.serve(async (req) => {
     const distAccount = new Account(distributorKeys.publicKey(), distData.sequence);
 
     // Construimos la transacción de pago.
+    // Incluimos un MEMO con el ID de la credencial para auditoría on-chain (Account Abstraction link)
     const tx = new TransactionBuilder(distAccount, { 
       fee: '1000', 
       networkPassphrase: Networks.TESTNET 
@@ -86,6 +106,7 @@ Deno.serve(async (req) => {
         asset: E4C_ASSET,
         amount: amount.toString()
       }))
+      .addMemo(Operation.Operation.memoText(validatorSignature.credentialId.slice(0, 28))) // El tip de los 28 bytes de la guía
       .setTimeout(30)
       .build();
 
@@ -108,10 +129,14 @@ Deno.serve(async (req) => {
     }
 
     // --- PASO 5: ACTUALIZACIÓN DE ESTADO ACADÉMICO Y BALANCE ---
-    // Solo si el pago en blockchain tuvo éxito, marcamos la tarea como validada.
+    // Marcamos la tarea como validada y añadimos la referencia de la firma
     const { error: updateError } = await supabaseClient
       .from('student_tasks')
-      .update({ status: 'validator_approved' })
+      .update({ 
+        status: 'validator_approved',
+        validator_signature: validatorSignature.signature, // Guardar la prueba de firma
+        blockchain_hash: result.hash
+      })
       .eq('id', studentTaskId);
 
     if (updateError) console.error("Error al actualizar estado post-transferencia:", updateError);

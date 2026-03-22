@@ -24,6 +24,9 @@ Deno.serve(async (req) => {
       Deno.env.get("SB_SERVICE_ROLE_KEY") ?? ""
     )
 
+    const { adminId } = await req.json().catch(() => ({}));
+    if (!adminId) throw new Error("adminId es requerido para vincular la cuenta de escrow");
+
     // --- Verificar si ya existe una cuenta de Escrow ---
     const { data: existingEscrow, error: fetchError } = await supabaseClient
       .from('stellar_wallets')
@@ -63,13 +66,11 @@ Deno.serve(async (req) => {
     }
 
     // --- Guardar en la tabla stellar_wallets ---
-    const { data, error } = await supabaseClient
+    const { error } = await supabaseClient
       .from('stellar_wallets')
       .insert([
-        { public_key: publicKey, secret_key: secretKey, role: 'escrow' }
-      ])
-      .select()
-      .single();
+        { public_key: publicKey, secret_key: secretKey, role: 'escrow', admin_id: adminId }
+      ]);
 
     if (error) throw new Error(`Error al guardar la cuenta de escrow en DB: ${error.message}`);
 

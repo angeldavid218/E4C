@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { X, CheckCircle, XCircle, FileText, AlertTriangle } from 'lucide-react';
+import { X, CheckCircle, XCircle, FileText, AlertTriangle, Fingerprint } from 'lucide-react';
 import type { NFTRequest } from '../../types';
+import { supabase } from '../../lib/supabaseClient';
+import { signStellarTransactionWithPasskey } from '../../lib/passkey';
 
 interface ValidationInterfaceProps {
   request: NFTRequest;
@@ -14,29 +16,47 @@ export function ValidationInterface({ request, onApprove, onReject, onClose }: V
   const [rejectionReason, setRejectionReason] = useState('');
   const [isValidating, setIsValidating] = useState(false);
 
-  // Este es el código que aprueba el envío de NFT y Tokens
+  // Este es el código que aprueba el envío de NFT y Tokens con Account Abstraction
   const handleApprove = async () => {
     setIsValidating(true);
     try {
-      // Extraer cantidad de tokens de la evidencia (guardamos "Recompensa: XX E4C" en TaskReview)
-      const amountMatch = request.evidence.match(/Recompensa: (\d+) E4C/);
-      const amount = amountMatch ? amountMatch[1] : "10"; // Fallback a 10 si no se encuentra
+      // 1. Crear un desafío único para esta validación (Hash de los datos clave)
+      const challengeStr = `Approve-Request-${request.id}-${Date.now()}`;
+      const encoder = new TextEncoder();
+      const challenge = encoder.encode(challengeStr);
 
+      // 2. Solicitar firma biométrica (ACCOUNT ABSTRACTION)
+      console.log("Solicitando firma biométrica para validación...");
+      const signatureData = await signStellarTransactionWithPasskey(challenge);
+
+      // 3. Extraer cantidad de tokens de la evidencia
+      const amountMatch = request.evidence.match(/Recompensa: (\d+) E4C/);
+      const amount = amountMatch ? amountMatch[1] : "10";
+
+      // 4. Invocar la Edge Function pasando la prueba criptográfica de autorización
       const { data, error } = await supabase.functions.invoke('send-e4c-tokens', {
         body: { 
           studentId: request.studentId, 
           amount: amount,
-          requestId: request.id
+          studentTaskId: request.id, // Corregido el nombre de la propiedad según la Edge Function
+          validatorSignature: {
+            credentialId: signatureData.credentialId,
+            signature: Buffer.from(signatureData.signature).toString('base64'),
+            challenge: challengeStr
+          }
         },
       });
 
       if (error) throw error;
 
-      alert(`¡Éxito! Se han transferido ${amount} E4C al estudiante y el certificado ha sido sellado.`);
+      alert(`¡Validación Biométrica Exitosa! Se han transferido ${amount} E4C al estudiante.`);
       onApprove();
     } catch (err: any) {
       console.error("Error en validación final:", err);
-      alert(`Error al procesar transferencia Stellar: ${err.message}`);
+      // No mostrar alert si el usuario canceló el prompt de biometría
+      if (err.name !== 'NotAllowedError') {
+        alert(`Error al procesar transferencia Stellar: ${err.message}`);
+      }
     } finally {
       setIsValidating(false);
     }

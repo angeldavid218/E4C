@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Coins, Award, ShoppingBag, Trophy, ClipboardList, Users, AlertCircle, Hourglass, User } from 'lucide-react';
+import { Coins, ShoppingBag, Trophy, ClipboardList, Users, User, Hourglass } from 'lucide-react';
 import { MyTokens } from './MyTokens';
 import { MyNFTs } from './MyNFTs';
 import { Marketplace } from './Marketplace';
@@ -17,58 +17,44 @@ interface StudentDashboardProps {
 
 type StudentView = 'tokens' | 'nfts' | 'marketplace' | 'my-tasks' | 'profile-settings';
 
-export function StudentDashboard({ studentId, nftRequests: propNftRequests }: StudentDashboardProps) {
-  const { user, allStudents, switchUserRole } = useAuth(); // Obtener de AuthContext
+export function StudentDashboard({ studentId }: StudentDashboardProps) {
+  const { allStudents } = useAuth();
   const [activeView, setActiveView] = useState<StudentView>('my-tasks');
   const [studentData, setStudentData] = useState<Student | null>(null);
-  const [nftRequests, setNftRequests] = useState<NFTRequest[]>(propNftRequests || []);
   const [e4cBalance, setE4cBalance] = useState<string | null>(null);
-  const [isLinked, setIsLinked] = useState(true); // Reañadir
-  const [isLinking, setIsLinking] = useState(false); // Reañadir
   const [loading, setLoading] = useState(false);
+  const [studentNFTs, setStudentNFTs] = useState<NFTRequest[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       if (!studentId) {
         setStudentData(null);
         setE4cBalance(null);
+        setStudentNFTs([]);
         return;
       }
 
       setLoading(true);
-      let student: Student | null = null;
-
-      if (studentId.startsWith('mock-')) {
-        // Si es un estudiante simulado, usar los datos de usuario simulados del contexto de autenticación
-        if (user && user.user_metadata.role === 'student' && user.id === studentId) {
-          student = {
-            id: user.id,
-            name: user.user_metadata.name || 'Mock Student',
-            email: user.user_metadata.email || 'mock@student.com',
-            enrollmentDate: new Date().toISOString(), // Fecha simulada
-            tokens: 0, // Tokens simulados
-            tasksCompleted: 0, // Tareas simuladas
-            nfts: [], // NFTs simulados
-            grade: '', // Calificación simulada
-            curso: 'Mock', // Curso simulado
-            division: 'A', // Mock division
-            escuela: 'Mock School', // Mock escuela
-            stellar_public_key: undefined, // Clave pública simulada
-            alias: 'mockstudent'
-          };
-        }
-      } else {
-        // De lo contrario, obtener de Supabase
-        const { data: fetchedStudent } = await supabase
-          .from('students')
+      try {
+        const { data: fetchedStudent, error } = await supabase
+          .from('profiles')
           .select('*')
           .eq('id', studentId)
           .single();
-        student = fetchedStudent as Student;
-      }
-
-      if (student) {
+        
+        if (error) throw error;
+        
+        const student = fetchedStudent as Student;
         setStudentData(student);
+
+        // Obtener NFTs aprobados/confirmados del alumno
+        const { data: nftData } = await supabase
+          .from('nft_requests')
+          .select('*')
+          .eq('student_id', studentId);
+        
+        setStudentNFTs(nftData?.filter(n => ['approved', 'blockchain-confirmed'].includes(n.status)) || []);
+
         if (student.stellar_public_key) {
           try {
             const server = new StellarSdk.Horizon.Server('https://horizon-testnet.stellar.org');
@@ -85,57 +71,26 @@ export function StudentDashboard({ studentId, nftRequests: propNftRequests }: St
               (b: any) => b.asset_code === 'E4C' && b.asset_issuer === issuerWallet?.public_key
             );
             
-            if (e4c) {
-              setE4cBalance(e4c.balance);
-              setIsLinked(true); // Reañadir
-            } else {
-              setE4cBalance('0');
-              setIsLinked(false); // Reañadir
-            }
+            setE4cBalance(e4c ? e4c.balance : '0');
           } catch (e) {
             setE4cBalance('0');
           }
         }
+      } catch (err) {
+        console.error("Error fetching student data:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchData();
   }, [studentId]);
 
-  const handleLinkToken = async () => {
-    if (!studentId) return;
-
-    setIsLinking(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('link-e4c-token', {
-        body: { studentId },
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      alert('Token E4C vinculado con éxito. Por favor, espera unos segundos y recarga la página para ver los cambios.'); 
-      setIsLinked(true);
-      // Una solución más robusta activaría una nueva obtención de los datos de la cuenta del estudiante y el saldo de E4C
-      // Para lograr esto, se podría refactorizar fetchData en un useCallback o pasarlo como prop.
-      // Para simplificar esta corrección, aconsejamos recargar la página.
-    } catch (error: any) {
-      console.error("Error al vincular el token E4C:", error);
-      alert(`Error al vincular el token: ${error.message}`);
-    } finally {
-      setIsLinking(false);
-    }
-  };
-
   const tabs = [
     { id: 'my-tasks' as StudentView, label: 'Mis Tareas', icon: ClipboardList, color: 'emerald' },
-
-
     { id: 'tokens' as StudentView, label: 'Mis Tokens', icon: Coins, color: 'indigo' },
     { id: 'nfts' as StudentView, label: 'Mis Logros NFT', icon: Trophy, color: 'purple' },
     { id: 'marketplace' as StudentView, label: 'Marketplace', icon: ShoppingBag, color: 'pink' },
-    { id: 'profile-settings' as StudentView, label: 'ConfiguraciÃ³n de Perfil', icon: User, color: 'gray' }, // Nueva pestaña
+    { id: 'profile-settings' as StudentView, label: 'Configuración de Perfil', icon: User, color: 'gray' },
   ];
 
   if (allStudents.length === 0) {
@@ -166,63 +121,43 @@ export function StudentDashboard({ studentId, nftRequests: propNftRequests }: St
     );
   }
 
-  if (loading || !studentData) return <div className="text-center p-12">Cargando datos del estudiante...</div>;
+  if (loading || !studentData) return <div className="text-center p-12 italic text-indigo-600 animate-pulse">Cargando datos del estudiante...</div>;
 
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white shadow-lg">
         <h2 className="text-3xl font-bold">¡Hola, {studentData.name}! 👋</h2>
-        <p className="mt-2 opacity-90 text-indigo-100">
+        <p className="mt-2 opacity-90 text-indigo-100 font-medium">
           ID: {studentId} | {studentData.curso}° "{studentData.division}" - {studentData.escuela}
         </p>
       </div>
 
-      {/* Alerta de Vinculación de Token */}
-      {!isLinked && (
-        <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm animate-pulse">
-          <div className="flex items-center gap-4">
-            <div className="bg-amber-100 p-3 rounded-full text-amber-600">
-              <AlertCircle size={24} />
-            </div>
-            <div>
-              <h4 className="font-bold text-amber-900">Vinculación de Token Pendiente</h4>
-              <p className="text-sm text-amber-700">Tu billetera no está lista para recibir E4C. Haz clic en el botón para activarla.</p>
-            </div>
-          </div>
-          <button
-            onClick={handleLinkToken}
-            disabled={isLinking}
-            className="px-6 py-2 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-700 transition-all flex items-center gap-2 shadow-md"
-          >
-            {isLinking ? <><Hourglass className="animate-spin" size={18}/> Vinculando...</> : "Vincular Token E4C"}
-          </button>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-          <p className="text-gray-500 text-sm font-medium mb-1">Tokens E4C</p>
-          <p className="text-3xl font-bold text-indigo-600">
-            {e4cBalance ? parseFloat(e4cBalance).toLocaleString('es-ES', { maximumFractionDigits: 2 }) : '0'}
+        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+          <p className="text-gray-500 text-sm font-bold mb-1">Tokens E4C</p>
+          <p className="text-3xl font-black text-indigo-600">
+            {e4cBalance ? parseFloat(e4cBalance).toLocaleString('es-ES', { maximumFractionDigits: 0 }) : '0'}
           </p>
         </div>
-        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-          <p className="text-gray-500 text-sm font-medium mb-1">Logros Obtenidos</p>
-          <p className="text-3xl font-bold text-purple-600">0</p>
+        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+          <p className="text-gray-500 text-sm font-bold mb-1">Logros Obtenidos</p>
+          <p className="text-3xl font-black text-purple-600">0</p>
         </div>
-        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-          <p className="text-gray-500 text-sm font-medium mb-1">Ranking</p>
-          <p className="text-3xl font-bold text-green-600">#3</p>
+        <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+          <p className="text-gray-500 text-sm font-bold mb-1">Tareas Finalizadas</p>
+          <p className="text-3xl font-black text-emerald-600">{studentData.tasks_completed || 0}</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-2 flex gap-2 overflow-x-auto">
+      <div className="bg-white rounded-xl border border-gray-200 p-2 flex gap-2 overflow-x-auto snap-x">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveView(tab.id)}
-            className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-lg transition-all whitespace-nowrap ${
-              activeView === tab.id ? `bg-${tab.color}-100 text-${tab.color}-700 font-bold` : 'text-gray-600 hover:bg-gray-50'
+            className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl transition-all whitespace-nowrap snap-start ${
+              activeView === tab.id 
+                ? `bg-indigo-600 text-white shadow-lg shadow-indigo-100 font-bold` 
+                : 'text-gray-600 hover:bg-gray-50'
             }`}
           >
             <tab.icon className="w-5 h-5" />
@@ -231,12 +166,12 @@ export function StudentDashboard({ studentId, nftRequests: propNftRequests }: St
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 p-6 min-h-[400px]">
+      <div className="bg-white rounded-2xl border border-gray-200 p-6 min-h-[400px] shadow-sm">
         {activeView === 'tokens' && <MyTokens studentId={studentId} />}
-        {activeView === 'nfts' && <MyNFTs nfts={[]} />}
+        {activeView === 'nfts' && <MyNFTs nfts={studentNFTs} />}
         {activeView === 'marketplace' && <Marketplace studentId={studentId} />}
         {activeView === 'my-tasks' && <MyTasks studentId={studentId} />}
-        {activeView === 'profile-settings' && <StudentProfileSettings studentId={studentId} />} {/* New render */}
+        {activeView === 'profile-settings' && <StudentProfileSettings studentId={studentId} />}
       </div>
     </div>
   );

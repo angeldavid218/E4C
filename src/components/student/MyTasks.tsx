@@ -161,7 +161,7 @@ export function MyTasks({ studentId }: MyTasksProps) {
               </div>
               <p className="text-gray-600 mb-2">{taskDetail.subject} - {taskDetail.points} E4C</p>
               <p className="text-sm text-gray-500 mb-3">
-                Fecha Límite: {taskDetail.duedate ? new Date(taskDetail.duedate).toLocaleDateString() : 'N/A'}
+                Fecha Límite: {taskDetail.due_date ? new Date(taskDetail.due_date).toLocaleDateString() : 'N/A'}
               </p>
               
               {(isAssigned || st.status === 'rejected_by_teacher') && (
